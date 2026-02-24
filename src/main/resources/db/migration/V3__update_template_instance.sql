@@ -1,0 +1,2 @@
+ALTER TABLE template_instance RENAME COLUMN period TO name;
+ALTER TABLE template_instance ADD COLUMN status VARCHAR(20) NOT NULL DEFAULT 'IN_PROGRESS';

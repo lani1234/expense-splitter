@@ -1,0 +1,1 @@
+ALTER TABLE split_rule_share RENAME TO split_rule_allocation;
