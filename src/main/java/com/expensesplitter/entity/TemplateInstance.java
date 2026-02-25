@@ -1,6 +1,6 @@
-package com.expensesplitter.instance;
+package com.expensesplitter.entity;
 
-import com.expensesplitter.template.Template;
+import com.expensesplitter.enums.InstanceStatus;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;

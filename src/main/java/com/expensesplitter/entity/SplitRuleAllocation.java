@@ -1,7 +1,5 @@
-package com.expensesplitter.allocation;
+package com.expensesplitter.entity;
 
-import com.expensesplitter.instance.InstanceFieldValue;
-import com.expensesplitter.participant.TemplateParticipant;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -11,11 +9,11 @@ import java.math.BigDecimal;
 import java.util.UUID;
 
 @Entity
-@Table(name = "entry_participant_allocation")
+@Table(name = "split_rule_allocation")
 @Getter
 @Setter
 @NoArgsConstructor
-public class EntryParticipantAllocation {
+public class SplitRuleAllocation {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -23,13 +21,13 @@ public class EntryParticipantAllocation {
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "entry_id", nullable = false)
-    private InstanceFieldValue instanceFieldValue;
+    @JoinColumn(name = "split_rule_id", nullable = false)
+    private SplitRule splitRule;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "template_participant_id", nullable = false)
     private TemplateParticipant templateParticipant;
 
-    @Column(name = "amount", nullable = false)
-    private BigDecimal amount;
+    @Column(name = "percent", nullable = false, precision = 5, scale = 2)
+    private BigDecimal percent;
 }

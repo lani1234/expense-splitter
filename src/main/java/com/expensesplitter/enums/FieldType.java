@@ -1,4 +1,4 @@
-package com.expensesplitter.field;
+package com.expensesplitter.enums;
 
 public enum FieldType {
     SINGLE,

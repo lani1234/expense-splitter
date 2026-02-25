@@ -1,7 +1,6 @@
-package com.expensesplitter.field;
+package com.expensesplitter.entity;
 
-import com.expensesplitter.splitrule.SplitRule;
-import com.expensesplitter.template.Template;
+import com.expensesplitter.enums.FieldType;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;

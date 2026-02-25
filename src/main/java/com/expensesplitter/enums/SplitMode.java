@@ -1,4 +1,4 @@
-package com.expensesplitter.instance;
+package com.expensesplitter.enums;
 
 public enum SplitMode {
     DEFAULT,

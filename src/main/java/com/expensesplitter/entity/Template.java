@@ -1,4 +1,4 @@
-package com.expensesplitter.template;
+package com.expensesplitter.entity;
 
 import jakarta.persistence.*;
 import lombok.Getter;

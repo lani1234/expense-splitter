@@ -1,6 +1,5 @@
-package com.expensesplitter.splitrule;
+package com.expensesplitter.entity;
 
-import com.expensesplitter.template.Template;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
