@@ -1,0 +1,1 @@
+ALTER TABLE template_instance ALTER COLUMN name TYPE VARCHAR(255);
