@@ -9,11 +9,11 @@ import java.math.BigDecimal;
 import java.util.UUID;
 
 @Entity
-@Table(name = "entry_participant_allocation")
+@Table(name = "participant_entry_amount")
 @Getter
 @Setter
 @NoArgsConstructor
-public class EntryParticipantAllocation {
+public class ParticipantEntryAmount {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)

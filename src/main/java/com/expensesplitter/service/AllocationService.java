@@ -13,11 +13,11 @@ import java.util.UUID;
 @Transactional
 public class AllocationService {
 
-    private final EntryParticipantAllocationRepository allocationRepository;
+    private final ParticipantEntryAmountRepository allocationRepository;
     private final InstanceService instanceService;
     private final TemplateService templateService;
 
-    public AllocationService(EntryParticipantAllocationRepository allocationRepository,
+    public AllocationService(ParticipantEntryAmountRepository allocationRepository,
                              InstanceService instanceService,
                              TemplateService templateService) {
         this.allocationRepository = allocationRepository;
@@ -26,36 +26,36 @@ public class AllocationService {
     }
 
     // Allocation CRUD Operations
-    public EntryParticipantAllocation createAllocation(UUID fieldValueId, UUID participantId, BigDecimal amount) {
+    public ParticipantEntryAmount createAllocation(UUID fieldValueId, UUID participantId, BigDecimal amount) {
         InstanceFieldValue fieldValue = instanceService.getFieldValueById(fieldValueId);
         TemplateParticipant participant = templateService.getParticipantById(participantId);
 
-        EntryParticipantAllocation allocation = new EntryParticipantAllocation();
+        ParticipantEntryAmount allocation = new ParticipantEntryAmount();
         allocation.setInstanceFieldValue(fieldValue);
         allocation.setTemplateParticipant(participant);
         allocation.setAmount(amount);
         return allocationRepository.save(allocation);
     }
 
-    public EntryParticipantAllocation getAllocationById(UUID allocationId) {
+    public ParticipantEntryAmount getAllocationById(UUID allocationId) {
         return allocationRepository.findById(allocationId)
                 .orElseThrow(() -> new RuntimeException("Allocation not found with id: " + allocationId));
     }
 
-    public List<EntryParticipantAllocation> getAllocationsByFieldValue(UUID fieldValueId) {
+    public List<ParticipantEntryAmount> getAllocationsByFieldValue(UUID fieldValueId) {
         return allocationRepository.findByInstanceFieldValueId(fieldValueId);
     }
 
-    public List<EntryParticipantAllocation> getAllocationsByParticipant(UUID participantId) {
+    public List<ParticipantEntryAmount> getAllocationsByParticipant(UUID participantId) {
         return allocationRepository.findByTemplateParticipantId(participantId);
     }
 
-    public List<EntryParticipantAllocation> getAllAllocations() {
+    public List<ParticipantEntryAmount> getAllAllocations() {
         return allocationRepository.findAll();
     }
 
-    public EntryParticipantAllocation updateAllocation(UUID allocationId, BigDecimal amount) {
-        EntryParticipantAllocation allocation = getAllocationById(allocationId);
+    public ParticipantEntryAmount updateAllocation(UUID allocationId, BigDecimal amount) {
+        ParticipantEntryAmount allocation = getAllocationById(allocationId);
         allocation.setAmount(amount);
         return allocationRepository.save(allocation);
     }
@@ -66,12 +66,12 @@ public class AllocationService {
 
     // Batch Operations
     public void deleteAllocationsByFieldValue(UUID fieldValueId) {
-        List<EntryParticipantAllocation> allocations = getAllocationsByFieldValue(fieldValueId);
+        List<ParticipantEntryAmount> allocations = getAllocationsByFieldValue(fieldValueId);
         allocationRepository.deleteAll(allocations);
     }
 
     public void deleteAllocationsByParticipant(UUID participantId) {
-        List<EntryParticipantAllocation> allocations = getAllocationsByParticipant(participantId);
+        List<ParticipantEntryAmount> allocations = getAllocationsByParticipant(participantId);
         allocationRepository.deleteAll(allocations);
     }
 
@@ -83,8 +83,8 @@ public class AllocationService {
 
         BigDecimal total = BigDecimal.ZERO;
         for (InstanceFieldValue fieldValue : fieldValues) {
-            List<EntryParticipantAllocation> allocations = getAllocationsByFieldValue(fieldValue.getId());
-            for (EntryParticipantAllocation allocation : allocations) {
+            List<ParticipantEntryAmount> allocations = getAllocationsByFieldValue(fieldValue.getId());
+            for (ParticipantEntryAmount allocation : allocations) {
                 if (allocation.getTemplateParticipant().getId().equals(participantId)) {
                     total = total.add(allocation.getAmount());
                 }

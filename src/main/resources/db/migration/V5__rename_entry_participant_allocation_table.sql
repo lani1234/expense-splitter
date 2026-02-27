@@ -1,0 +1,1 @@
+ALTER TABLE entry_participant_allocation RENAME TO participant_entry_amount;

@@ -1,6 +1,6 @@
 package com.expensesplitter.controller;
 
-import com.expensesplitter.entity.EntryParticipantAllocation;
+import com.expensesplitter.entity.ParticipantEntryAmount;
 import com.expensesplitter.service.AllocationService;
 import com.expensesplitter.service.ApiResponse;
 import org.springframework.http.HttpStatus;
@@ -23,12 +23,12 @@ public class AllocationController {
 
     // Allocation CRUD Operations
     @PostMapping
-    public ResponseEntity<ApiResponse<EntryParticipantAllocation>> createAllocation(
+    public ResponseEntity<ApiResponse<ParticipantEntryAmount>> createAllocation(
             @RequestParam UUID fieldValueId,
             @RequestParam UUID participantId,
             @RequestParam BigDecimal amount) {
         try {
-            EntryParticipantAllocation allocation = allocationService.createAllocation(fieldValueId, participantId, amount);
+            ParticipantEntryAmount allocation = allocationService.createAllocation(fieldValueId, participantId, amount);
             return ResponseEntity.status(HttpStatus.CREATED)
                     .body(new ApiResponse<>(true, allocation, "Allocation created successfully"));
         } catch (Exception e) {
@@ -38,9 +38,9 @@ public class AllocationController {
     }
 
     @GetMapping("/{allocationId}")
-    public ResponseEntity<ApiResponse<EntryParticipantAllocation>> getAllocation(@PathVariable UUID allocationId) {
+    public ResponseEntity<ApiResponse<ParticipantEntryAmount>> getAllocation(@PathVariable UUID allocationId) {
         try {
-            EntryParticipantAllocation allocation = allocationService.getAllocationById(allocationId);
+            ParticipantEntryAmount allocation = allocationService.getAllocationById(allocationId);
             return ResponseEntity.ok(new ApiResponse<>(true, allocation));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
@@ -49,9 +49,9 @@ public class AllocationController {
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<EntryParticipantAllocation>>> getAllAllocations() {
+    public ResponseEntity<ApiResponse<List<ParticipantEntryAmount>>> getAllAllocations() {
         try {
-            List<EntryParticipantAllocation> allocations = allocationService.getAllAllocations();
+            List<ParticipantEntryAmount> allocations = allocationService.getAllAllocations();
             return ResponseEntity.ok(new ApiResponse<>(true, allocations));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -60,11 +60,11 @@ public class AllocationController {
     }
 
     @PutMapping("/{allocationId}")
-    public ResponseEntity<ApiResponse<EntryParticipantAllocation>> updateAllocation(
+    public ResponseEntity<ApiResponse<ParticipantEntryAmount>> updateAllocation(
             @PathVariable UUID allocationId,
             @RequestParam BigDecimal amount) {
         try {
-            EntryParticipantAllocation allocation = allocationService.updateAllocation(allocationId, amount);
+            ParticipantEntryAmount allocation = allocationService.updateAllocation(allocationId, amount);
             return ResponseEntity.ok(new ApiResponse<>(true, allocation, "Allocation updated successfully"));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -85,10 +85,10 @@ public class AllocationController {
 
     // Query Endpoints
     @GetMapping("/field-value/{fieldValueId}")
-    public ResponseEntity<ApiResponse<List<EntryParticipantAllocation>>> getAllocationsByFieldValue(
+    public ResponseEntity<ApiResponse<List<ParticipantEntryAmount>>> getAllocationsByFieldValue(
             @PathVariable UUID fieldValueId) {
         try {
-            List<EntryParticipantAllocation> allocations = allocationService.getAllocationsByFieldValue(fieldValueId);
+            List<ParticipantEntryAmount> allocations = allocationService.getAllocationsByFieldValue(fieldValueId);
             return ResponseEntity.ok(new ApiResponse<>(true, allocations));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -97,10 +97,10 @@ public class AllocationController {
     }
 
     @GetMapping("/participant/{participantId}")
-    public ResponseEntity<ApiResponse<List<EntryParticipantAllocation>>> getAllocationsByParticipant(
+    public ResponseEntity<ApiResponse<List<ParticipantEntryAmount>>> getAllocationsByParticipant(
             @PathVariable UUID participantId) {
         try {
-            List<EntryParticipantAllocation> allocations = allocationService.getAllocationsByParticipant(participantId);
+            List<ParticipantEntryAmount> allocations = allocationService.getAllocationsByParticipant(participantId);
             return ResponseEntity.ok(new ApiResponse<>(true, allocations));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
