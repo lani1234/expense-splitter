@@ -1,7 +1,7 @@
 package com.expensesplitter.controller;
 
 import com.expensesplitter.entity.ParticipantEntryAmount;
-import com.expensesplitter.service.CalculationService;
+import com.expensesplitter.service.ParticipantEntryAmountService;
 import com.expensesplitter.service.ApiResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -12,13 +12,13 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/calculations")
-public class CalculationController {
+@RequestMapping("/api/participant-entry-amounts")
+public class ParticipantEntryAmountController {
 
-    private final CalculationService calculationService;
+    private final ParticipantEntryAmountService participantEntryAmountService;
 
-    public CalculationController(CalculationService calculationService) {
-        this.calculationService = calculationService;
+    public ParticipantEntryAmountController(ParticipantEntryAmountService participantEntryAmountService) {
+        this.participantEntryAmountService = participantEntryAmountService;
     }
 
     // ParticipantEntryAmount CRUD Operations
@@ -28,7 +28,7 @@ public class CalculationController {
             @RequestParam UUID participantId,
             @RequestParam BigDecimal amount) {
         try {
-            ParticipantEntryAmount participantEntryAmount = calculationService.createParticipantEntryAmount(fieldValueId, participantId, amount);
+            ParticipantEntryAmount participantEntryAmount = participantEntryAmountService.createParticipantEntryAmount(fieldValueId, participantId, amount);
             return ResponseEntity.status(HttpStatus.CREATED)
                     .body(new ApiResponse<>(true, participantEntryAmount, "ParticipantEntryAmount created successfully"));
         } catch (Exception e) {
@@ -40,7 +40,7 @@ public class CalculationController {
     @GetMapping("/{participantEntryAmountId}")
     public ResponseEntity<ApiResponse<ParticipantEntryAmount>> getParticipantEntryAmount(@PathVariable UUID participantEntryAmountId) {
         try {
-            ParticipantEntryAmount participantEntryAmount = calculationService.getParticipantEntryAmountById(participantEntryAmountId);
+            ParticipantEntryAmount participantEntryAmount = participantEntryAmountService.getParticipantEntryAmountById(participantEntryAmountId);
             return ResponseEntity.ok(new ApiResponse<>(true, participantEntryAmount));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
@@ -51,7 +51,7 @@ public class CalculationController {
     @GetMapping
     public ResponseEntity<ApiResponse<List<ParticipantEntryAmount>>> getAllParticipantEntryAmounts() {
         try {
-            List<ParticipantEntryAmount> participantEntryAmounts = calculationService.getAllParticipantEntryAmounts();
+            List<ParticipantEntryAmount> participantEntryAmounts = participantEntryAmountService.getAllParticipantEntryAmounts();
             return ResponseEntity.ok(new ApiResponse<>(true, participantEntryAmounts));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -64,7 +64,7 @@ public class CalculationController {
             @PathVariable UUID participantEntryAmountId,
             @RequestParam BigDecimal amount) {
         try {
-            ParticipantEntryAmount participantEntryAmount = calculationService.updateParticipantEntryAmount(participantEntryAmountId, amount);
+            ParticipantEntryAmount participantEntryAmount = participantEntryAmountService.updateParticipantEntryAmount(participantEntryAmountId, amount);
             return ResponseEntity.ok(new ApiResponse<>(true, participantEntryAmount, "ParticipantEntryAmount updated successfully"));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -75,7 +75,7 @@ public class CalculationController {
     @DeleteMapping("/{participantEntryAmountId}")
     public ResponseEntity<ApiResponse<Void>> deleteParticipantEntryAmount(@PathVariable UUID participantEntryAmountId) {
         try {
-            calculationService.deleteParticipantEntryAmount(participantEntryAmountId);
+            participantEntryAmountService.deleteParticipantEntryAmount(participantEntryAmountId);
             return ResponseEntity.ok(new ApiResponse<>(true, "ParticipantEntryAmount deleted successfully"));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -88,7 +88,7 @@ public class CalculationController {
     public ResponseEntity<ApiResponse<List<ParticipantEntryAmount>>> getParticipantEntryAmountsByFieldValue(
             @PathVariable UUID fieldValueId) {
         try {
-            List<ParticipantEntryAmount> participantEntryAmounts = calculationService.getParticipantEntryAmountsByFieldValue(fieldValueId);
+            List<ParticipantEntryAmount> participantEntryAmounts = participantEntryAmountService.getParticipantEntryAmountsByFieldValue(fieldValueId);
             return ResponseEntity.ok(new ApiResponse<>(true, participantEntryAmounts));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -100,7 +100,7 @@ public class CalculationController {
     public ResponseEntity<ApiResponse<List<ParticipantEntryAmount>>> getParticipantEntryAmountsByParticipant(
             @PathVariable UUID participantId) {
         try {
-            List<ParticipantEntryAmount> participantEntryAmounts = calculationService.getParticipantEntryAmountsByParticipant(participantId);
+            List<ParticipantEntryAmount> participantEntryAmounts = participantEntryAmountService.getParticipantEntryAmountsByParticipant(participantId);
             return ResponseEntity.ok(new ApiResponse<>(true, participantEntryAmounts));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -112,7 +112,7 @@ public class CalculationController {
     @DeleteMapping("/field-value/{fieldValueId}")
     public ResponseEntity<ApiResponse<Void>> deleteAllParticipantEntryAmountsByFieldValue(@PathVariable UUID fieldValueId) {
         try {
-            calculationService.deleteAllParticipantEntryAmountsByFieldValue(fieldValueId);
+            participantEntryAmountService.deleteAllParticipantEntryAmountsByFieldValue(fieldValueId);
             return ResponseEntity.ok(new ApiResponse<>(true, "ParticipantEntryAmounts deleted successfully"));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -123,7 +123,7 @@ public class CalculationController {
     @DeleteMapping("/participant/{participantId}")
     public ResponseEntity<ApiResponse<Void>> deleteAllParticipantEntryAmountsByParticipant(@PathVariable UUID participantId) {
         try {
-            calculationService.deleteAllParticipantEntryAmountsByParticipant(participantId);
+            participantEntryAmountService.deleteAllParticipantEntryAmountsByParticipant(participantId);
             return ResponseEntity.ok(new ApiResponse<>(true, "ParticipantEntryAmounts deleted successfully"));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -137,7 +137,7 @@ public class CalculationController {
             @PathVariable UUID instanceId,
             @PathVariable UUID participantId) {
         try {
-            BigDecimal total = calculationService.getTotalAmountForParticipantInInstance(instanceId, participantId);
+            BigDecimal total = participantEntryAmountService.getTotalAmountForParticipantInInstance(instanceId, participantId);
             return ResponseEntity.ok(new ApiResponse<>(true, total));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)

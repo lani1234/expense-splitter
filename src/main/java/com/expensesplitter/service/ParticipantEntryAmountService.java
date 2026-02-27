@@ -11,15 +11,15 @@ import java.util.UUID;
 
 @Service
 @Transactional
-public class CalculationService {
+public class ParticipantEntryAmountService {
 
     private final ParticipantEntryAmountRepository participantEntryAmountRepository;
     private final InstanceService instanceService;
     private final TemplateService templateService;
 
-    public CalculationService(ParticipantEntryAmountRepository participantEntryAmountRepository,
-                              InstanceService instanceService,
-                              TemplateService templateService) {
+    public ParticipantEntryAmountService(ParticipantEntryAmountRepository participantEntryAmountRepository,
+                                         InstanceService instanceService,
+                                         TemplateService templateService) {
         this.participantEntryAmountRepository = participantEntryAmountRepository;
         this.instanceService = instanceService;
         this.templateService = templateService;
