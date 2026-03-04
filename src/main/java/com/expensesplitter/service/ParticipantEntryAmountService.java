@@ -27,6 +27,19 @@ public class ParticipantEntryAmountService {
 
     // ParticipantEntryAmount CRUD Operations
     public ParticipantEntryAmount createParticipantEntryAmount(UUID fieldValueId, UUID participantId, BigDecimal amount) {
+        if (fieldValueId == null) {
+            throw new ValidationException("Field value ID is required");
+        }
+        if (participantId == null) {
+            throw new ValidationException("Participant ID is required");
+        }
+        if (amount == null) {
+            throw new ValidationException("Amount is required");
+        }
+        if (amount.compareTo(BigDecimal.ZERO) < 0) {
+            throw new ValidationException("Amount cannot be negative");
+        }
+
         InstanceFieldValue fieldValue = instanceService.getFieldValueById(fieldValueId);
         TemplateParticipant participant = templateService.getParticipantById(participantId);
 
@@ -39,7 +52,7 @@ public class ParticipantEntryAmountService {
 
     public ParticipantEntryAmount getParticipantEntryAmountById(UUID participantEntryAmountId) {
         return participantEntryAmountRepository.findById(participantEntryAmountId)
-                .orElseThrow(() -> new RuntimeException("ParticipantEntryAmount not found with id: " + participantEntryAmountId));
+                .orElseThrow(() -> new ResourceNotFoundException("ParticipantEntryAmount not found with id: " + participantEntryAmountId));
     }
 
     public List<ParticipantEntryAmount> getParticipantEntryAmountsByFieldValue(UUID fieldValueId) {
@@ -55,6 +68,16 @@ public class ParticipantEntryAmountService {
     }
 
     public ParticipantEntryAmount updateParticipantEntryAmount(UUID participantEntryAmountId, BigDecimal amount) {
+        if (participantEntryAmountId == null) {
+            throw new ValidationException("ParticipantEntryAmount ID is required");
+        }
+        if (amount == null) {
+            throw new ValidationException("Amount is required");
+        }
+        if (amount.compareTo(BigDecimal.ZERO) < 0) {
+            throw new ValidationException("Amount cannot be negative");
+        }
+
         ParticipantEntryAmount participantEntryAmount = getParticipantEntryAmountById(participantEntryAmountId);
         participantEntryAmount.setAmount(amount);
         return participantEntryAmountRepository.save(participantEntryAmount);

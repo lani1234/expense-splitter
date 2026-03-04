@@ -32,6 +32,16 @@ public class InstanceService {
 
     // Instance CRUD Operations
     public TemplateInstance createInstance(UUID templateId, String name) {
+        if (templateId == null) {
+            throw new ValidationException("Template ID is required");
+        }
+        if (name == null || name.trim().isEmpty()) {
+            throw new ValidationException("Instance name is required");
+        }
+        if (name.length() > 255) {
+            throw new ValidationException("Instance name cannot exceed 255 characters");
+        }
+
         Template template = templateService.getTemplateById(templateId);
         TemplateInstance instance = new TemplateInstance();
         instance.setTemplate(template);
@@ -42,7 +52,7 @@ public class InstanceService {
 
     public TemplateInstance getInstanceById(UUID instanceId) {
         return instanceRepository.findById(instanceId)
-                .orElseThrow(() -> new RuntimeException("Instance not found with id: " + instanceId));
+                .orElseThrow(() -> new ResourceNotFoundException("Instance not found with id: " + instanceId));
     }
 
     public List<TemplateInstance> getInstancesByTemplate(UUID templateId) {
@@ -58,6 +68,16 @@ public class InstanceService {
     }
 
     public TemplateInstance updateInstanceName(UUID instanceId, String name) {
+        if (instanceId == null) {
+            throw new ValidationException("Instance ID is required");
+        }
+        if (name == null || name.trim().isEmpty()) {
+            throw new ValidationException("Instance name is required");
+        }
+        if (name.length() > 255) {
+            throw new ValidationException("Instance name cannot exceed 255 characters");
+        }
+
         TemplateInstance instance = getInstanceById(instanceId);
         instance.setName(name);
         return instanceRepository.save(instance);
@@ -84,6 +104,19 @@ public class InstanceService {
                                             String note, java.time.LocalDate entryDate,
                                             com.expensesplitter.enums.SplitMode splitMode,
                                             UUID overrideSplitRuleId) {
+        if (instanceId == null) {
+            throw new ValidationException("Instance ID is required");
+        }
+        if (templateFieldId == null) {
+            throw new ValidationException("Template field ID is required");
+        }
+        if (amount == null) {
+            throw new ValidationException("Amount is required");
+        }
+        if (amount.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new ValidationException("Amount must be greater than zero");
+        }
+
         TemplateInstance instance = getInstanceById(instanceId);
         TemplateField templateField = templateService.getFieldById(templateFieldId);
 
@@ -119,7 +152,7 @@ public class InstanceService {
 
     public InstanceFieldValue getFieldValueById(UUID fieldValueId) {
         return fieldValueRepository.findById(fieldValueId)
-                .orElseThrow(() -> new RuntimeException("Field value not found with id: " + fieldValueId));
+                .orElseThrow(() -> new ResourceNotFoundException("Field value not found with id: " + fieldValueId));
     }
 
     public InstanceFieldValue updateFieldValue(UUID fieldValueId, BigDecimal amount, String note,
@@ -157,7 +190,7 @@ public class InstanceService {
 
         // If no split rule is defined, we can't allocate
         if (splitRule == null) {
-            throw new RuntimeException("No split rule defined for field value: " + fieldValue.getId());
+            throw new ResourceNotFoundException("No split rule defined for field value: " + fieldValue.getId());
         }
 
         // Get all allocations (percentages) for this split rule

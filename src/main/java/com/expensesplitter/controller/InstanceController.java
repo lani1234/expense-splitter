@@ -30,106 +30,61 @@ public class InstanceController {
     public ResponseEntity<ApiResponse<TemplateInstance>> createInstance(
             @RequestParam UUID templateId,
             @RequestParam String name) {
-        try {
-            TemplateInstance instance = instanceService.createInstance(templateId, name);
-            return ResponseEntity.status(HttpStatus.CREATED)
-                    .body(new ApiResponse<>(true, instance, "Instance created successfully"));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new ApiResponse<>(false, "Error creating instance: " + e.getMessage()));
-        }
+        TemplateInstance instance = instanceService.createInstance(templateId, name);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(new ApiResponse<>(true, instance, "Instance created successfully"));
     }
 
     @GetMapping("/{instanceId}")
     public ResponseEntity<ApiResponse<TemplateInstance>> getInstance(@PathVariable UUID instanceId) {
-        try {
-            TemplateInstance instance = instanceService.getInstanceById(instanceId);
-            return ResponseEntity.ok(new ApiResponse<>(true, instance));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(new ApiResponse<>(false, "Instance not found: " + e.getMessage()));
-        }
+        TemplateInstance instance = instanceService.getInstanceById(instanceId);
+        return ResponseEntity.ok(new ApiResponse<>(true, instance));
     }
 
     @GetMapping("/template/{templateId}")
     public ResponseEntity<ApiResponse<List<TemplateInstance>>> getInstancesByTemplate(@PathVariable UUID templateId) {
-        try {
-            List<TemplateInstance> instances = instanceService.getInstancesByTemplate(templateId);
-            return ResponseEntity.ok(new ApiResponse<>(true, instances));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new ApiResponse<>(false, "Error fetching instances: " + e.getMessage()));
-        }
+        List<TemplateInstance> instances = instanceService.getInstancesByTemplate(templateId);
+        return ResponseEntity.ok(new ApiResponse<>(true, instances));
     }
 
     @GetMapping("/template/{templateId}/status/{status}")
     public ResponseEntity<ApiResponse<List<TemplateInstance>>> getInstancesByTemplateAndStatus(
             @PathVariable UUID templateId,
             @PathVariable InstanceStatus status) {
-        try {
-            List<TemplateInstance> instances = instanceService.getInstancesByTemplateAndStatus(templateId, status);
-            return ResponseEntity.ok(new ApiResponse<>(true, instances));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new ApiResponse<>(false, "Error fetching instances: " + e.getMessage()));
-        }
+        List<TemplateInstance> instances = instanceService.getInstancesByTemplateAndStatus(templateId, status);
+        return ResponseEntity.ok(new ApiResponse<>(true, instances));
     }
 
     @GetMapping
     public ResponseEntity<ApiResponse<List<TemplateInstance>>> getAllInstances() {
-        try {
-            List<TemplateInstance> instances = instanceService.getAllInstances();
-            return ResponseEntity.ok(new ApiResponse<>(true, instances));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new ApiResponse<>(false, "Error fetching instances: " + e.getMessage()));
-        }
+        List<TemplateInstance> instances = instanceService.getAllInstances();
+        return ResponseEntity.ok(new ApiResponse<>(true, instances));
     }
 
     @PutMapping("/{instanceId}/name")
     public ResponseEntity<ApiResponse<TemplateInstance>> updateInstanceName(
             @PathVariable UUID instanceId,
             @RequestParam String name) {
-        try {
-            TemplateInstance instance = instanceService.updateInstanceName(instanceId, name);
-            return ResponseEntity.ok(new ApiResponse<>(true, instance, "Instance name updated successfully"));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new ApiResponse<>(false, "Error updating instance: " + e.getMessage()));
-        }
+        TemplateInstance instance = instanceService.updateInstanceName(instanceId, name);
+        return ResponseEntity.ok(new ApiResponse<>(true, instance, "Instance name updated successfully"));
     }
 
     @PutMapping("/{instanceId}/settle")
     public ResponseEntity<ApiResponse<TemplateInstance>> markInstanceAsSettled(@PathVariable UUID instanceId) {
-        try {
-            TemplateInstance instance = instanceService.markInstanceAsSettled(instanceId);
-            return ResponseEntity.ok(new ApiResponse<>(true, instance, "Instance marked as settled"));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new ApiResponse<>(false, "Error settling instance: " + e.getMessage()));
-        }
+        TemplateInstance instance = instanceService.markInstanceAsSettled(instanceId);
+        return ResponseEntity.ok(new ApiResponse<>(true, instance, "Instance marked as settled"));
     }
 
     @PutMapping("/{instanceId}/reopen")
     public ResponseEntity<ApiResponse<TemplateInstance>> markInstanceAsInProgress(@PathVariable UUID instanceId) {
-        try {
-            TemplateInstance instance = instanceService.markInstanceAsInProgress(instanceId);
-            return ResponseEntity.ok(new ApiResponse<>(true, instance, "Instance reopened"));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new ApiResponse<>(false, "Error reopening instance: " + e.getMessage()));
-        }
+        TemplateInstance instance = instanceService.markInstanceAsInProgress(instanceId);
+        return ResponseEntity.ok(new ApiResponse<>(true, instance, "Instance reopened"));
     }
 
     @DeleteMapping("/{instanceId}")
     public ResponseEntity<ApiResponse<Void>> deleteInstance(@PathVariable UUID instanceId) {
-        try {
-            instanceService.deleteInstance(instanceId);
-            return ResponseEntity.ok(new ApiResponse<>(true, "Instance deleted successfully"));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new ApiResponse<>(false, "Error deleting instance: " + e.getMessage()));
-        }
+        instanceService.deleteInstance(instanceId);
+        return ResponseEntity.ok(new ApiResponse<>(true, "Instance deleted successfully"));
     }
 
     // Field Value Endpoints
@@ -142,50 +97,30 @@ public class InstanceController {
             @RequestParam(required = false) LocalDate entryDate,
             @RequestParam(required = false) SplitMode splitMode,
             @RequestParam(required = false) UUID overrideSplitRuleId) {
-        try {
-            InstanceFieldValue fieldValue = instanceService.addFieldValue(
-                    instanceId, templateFieldId, amount, note, entryDate, splitMode, overrideSplitRuleId);
-            return ResponseEntity.status(HttpStatus.CREATED)
-                    .body(new ApiResponse<>(true, fieldValue, "Field value added successfully"));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new ApiResponse<>(false, "Error adding field value: " + e.getMessage()));
-        }
+        InstanceFieldValue fieldValue = instanceService.addFieldValue(
+                instanceId, templateFieldId, amount, note, entryDate, splitMode, overrideSplitRuleId);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(new ApiResponse<>(true, fieldValue, "Field value added successfully"));
     }
 
     @GetMapping("/{instanceId}/field-values")
     public ResponseEntity<ApiResponse<List<InstanceFieldValue>>> getFieldValuesByInstance(@PathVariable UUID instanceId) {
-        try {
-            List<InstanceFieldValue> fieldValues = instanceService.getFieldValuesByInstance(instanceId);
-            return ResponseEntity.ok(new ApiResponse<>(true, fieldValues));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new ApiResponse<>(false, "Error fetching field values: " + e.getMessage()));
-        }
+        List<InstanceFieldValue> fieldValues = instanceService.getFieldValuesByInstance(instanceId);
+        return ResponseEntity.ok(new ApiResponse<>(true, fieldValues));
     }
 
     @GetMapping("/{instanceId}/field-values/field/{templateFieldId}")
     public ResponseEntity<ApiResponse<List<InstanceFieldValue>>> getFieldValuesByInstanceAndField(
             @PathVariable UUID instanceId,
             @PathVariable UUID templateFieldId) {
-        try {
-            List<InstanceFieldValue> fieldValues = instanceService.getFieldValuesByInstanceAndField(instanceId, templateFieldId);
-            return ResponseEntity.ok(new ApiResponse<>(true, fieldValues));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new ApiResponse<>(false, "Error fetching field values: " + e.getMessage()));
-        }
+        List<InstanceFieldValue> fieldValues = instanceService.getFieldValuesByInstanceAndField(instanceId, templateFieldId);
+        return ResponseEntity.ok(new ApiResponse<>(true, fieldValues));
     }
 
     @GetMapping("/field-values/{fieldValueId}")
     public ResponseEntity<ApiResponse<InstanceFieldValue>> getFieldValue(@PathVariable UUID fieldValueId) {
-        try {
-            InstanceFieldValue fieldValue = instanceService.getFieldValueById(fieldValueId);
-            return ResponseEntity.ok(new ApiResponse<>(true, fieldValue));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(new ApiResponse<>(false, "Field value not found: " + e.getMessage()));
-        }
+        InstanceFieldValue fieldValue = instanceService.getFieldValueById(fieldValueId);
+        return ResponseEntity.ok(new ApiResponse<>(true, fieldValue));
     }
 
     @PutMapping("/field-values/{fieldValueId}")
@@ -196,24 +131,14 @@ public class InstanceController {
             @RequestParam(required = false) LocalDate entryDate,
             @RequestParam(required = false) SplitMode splitMode,
             @RequestParam(required = false) UUID overrideSplitRuleId) {
-        try {
-            InstanceFieldValue fieldValue = instanceService.updateFieldValue(
-                    fieldValueId, amount, note, entryDate, splitMode, overrideSplitRuleId);
-            return ResponseEntity.ok(new ApiResponse<>(true, fieldValue, "Field value updated successfully"));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new ApiResponse<>(false, "Error updating field value: " + e.getMessage()));
-        }
+        InstanceFieldValue fieldValue = instanceService.updateFieldValue(
+                fieldValueId, amount, note, entryDate, splitMode, overrideSplitRuleId);
+        return ResponseEntity.ok(new ApiResponse<>(true, fieldValue, "Field value updated successfully"));
     }
 
     @DeleteMapping("/field-values/{fieldValueId}")
     public ResponseEntity<ApiResponse<Void>> deleteFieldValue(@PathVariable UUID fieldValueId) {
-        try {
-            instanceService.deleteFieldValue(fieldValueId);
-            return ResponseEntity.ok(new ApiResponse<>(true, "Field value deleted successfully"));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new ApiResponse<>(false, "Error deleting field value: " + e.getMessage()));
-        }
+        instanceService.deleteFieldValue(fieldValueId);
+        return ResponseEntity.ok(new ApiResponse<>(true, "Field value deleted successfully"));
     }
 }
