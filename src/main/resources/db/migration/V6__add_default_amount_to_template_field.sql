@@ -1,0 +1,1 @@
+ALTER TABLE template_field ADD COLUMN default_amount NUMERIC(10,2);

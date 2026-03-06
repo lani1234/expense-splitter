@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
 import java.util.UUID;
 
 @Entity
@@ -34,6 +35,9 @@ public class TemplateField {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "default_split_rule_id")
     private SplitRule defaultSplitRule;
+
+    @Column(name = "default_amount")
+    private BigDecimal defaultAmount;
 
     @Column(name = "display_order", nullable = false)
     private int displayOrder;

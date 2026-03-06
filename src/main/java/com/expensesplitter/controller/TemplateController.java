@@ -141,8 +141,9 @@ public class TemplateController {
             @RequestParam String label,
             @RequestParam FieldType fieldType,
             @RequestParam(required = false) UUID defaultSplitRuleId,
-            @RequestParam int displayOrder) {
-        TemplateField field = templateService.addField(templateId, label, fieldType, defaultSplitRuleId, displayOrder);
+            @RequestParam int displayOrder,
+            @RequestParam(required = false) BigDecimal defaultAmount) {
+        TemplateField field = templateService.addField(templateId, label, fieldType, defaultSplitRuleId, displayOrder, defaultAmount);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(new ApiResponse<>(true, field, "Field added successfully"));
     }

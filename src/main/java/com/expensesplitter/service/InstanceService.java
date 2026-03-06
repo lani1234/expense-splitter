@@ -47,7 +47,12 @@ public class InstanceService {
         instance.setTemplate(template);
         instance.setName(name);
         instance.setStatus(InstanceStatus.IN_PROGRESS);
-        return instanceRepository.save(instance);
+        TemplateInstance savedInstance = instanceRepository.save(instance);
+
+        // Auto-populate fields with default amounts
+        createDefaultFieldValues(savedInstance.getId());
+
+        return savedInstance;
     }
 
     public TemplateInstance getInstanceById(UUID instanceId) {
@@ -207,6 +212,27 @@ public class InstanceService {
             participantEntryAmount.setTemplateParticipant(ruleAllocation.getTemplateParticipant());
             participantEntryAmount.setAmount(participantAmount);
             participantEntryAmountRepository.save(participantEntryAmount);
+        }
+    }
+
+    // automatically create fieldvalue when default amounts are present on newly created fields
+    public void createDefaultFieldValues(UUID instanceId) {
+        TemplateInstance instance = getInstanceById(instanceId);
+        List<TemplateField> fields = templateService.getFieldsByTemplate(instance.getTemplate().getId());
+
+        for (TemplateField field : fields) {
+            if (field.getDefaultAmount() != null) {
+                InstanceFieldValue fieldValue = new InstanceFieldValue();
+                fieldValue.setInstance(instance);
+                fieldValue.setTemplateField(field);
+                fieldValue.setAmount(field.getDefaultAmount());
+                fieldValue.setSplitMode(SplitMode.DEFAULT);
+
+                InstanceFieldValue savedFieldValue = fieldValueRepository.save(fieldValue);
+
+                // Calculate allocations for the default field value
+                calculateAndCreateParticipantEntryAmounts(savedFieldValue);
+            }
         }
     }
 }

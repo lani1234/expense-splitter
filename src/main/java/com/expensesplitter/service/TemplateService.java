@@ -5,6 +5,7 @@ import com.expensesplitter.repository.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 
@@ -173,7 +174,7 @@ public class TemplateService {
 
     // Template Field Operations
     public TemplateField addField(UUID templateId, String label, com.expensesplitter.enums.FieldType fieldType,
-                                  UUID defaultSplitRuleId, int displayOrder) {
+                                  UUID defaultSplitRuleId, int displayOrder, BigDecimal defaultAmount) {
         if (templateId == null) {
             throw new ValidationException("Template ID is required");
         }
@@ -186,6 +187,9 @@ public class TemplateService {
         if (fieldType == null) {
             throw new ValidationException("Field type is required");
         }
+        if (defaultAmount != null && defaultAmount.compareTo(BigDecimal.ZERO) < 0) {
+            throw new ValidationException("Default amount cannot be negative");
+        }
 
         Template template = getTemplateById(templateId);
         TemplateField field = new TemplateField();
@@ -193,6 +197,7 @@ public class TemplateService {
         field.setLabel(label);
         field.setFieldType(fieldType);
         field.setDisplayOrder(displayOrder);
+        field.setDefaultAmount(defaultAmount);
 
         if (defaultSplitRuleId != null) {
             SplitRule defaultRule = getSplitRuleById(defaultSplitRuleId);
