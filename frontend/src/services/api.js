@@ -51,18 +51,19 @@ export const getFieldValuesByInstance = async (instanceId) => {
   return response.json();
 };
 
-export const addFieldValue = async (instanceId, templateFieldId, amount, note, entryDate, splitMode) => {
-  const params = new URLSearchParams({
-    templateFieldId,
-    amount,
-    splitMode: splitMode || 'DEFAULT',
-  });
-
-  if (note) params.append('note', note);
-  if (entryDate) params.append('entryDate', entryDate);
-
-  const response = await fetch(`${API_BASE_URL}/instances/${instanceId}/field-values?${params}`, {
+export const addFieldValue = async (instanceId, templateFieldId, amount, note, entryDate, splitMode, overrideSplitRuleId, participantAmounts) => {
+  const response = await fetch(`${API_BASE_URL}/instances/${instanceId}/field-values`, {
     method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      templateFieldId,
+      amount,
+      note,
+      entryDate,
+      splitMode: splitMode || 'TEMPLATE_FIELD_PERCENT_SPLIT',
+      overrideSplitRuleId,
+      participantAmounts
+    }),
   });
   if (!response.ok) throw new Error('Failed to add field value');
   return response.json();
@@ -104,4 +105,22 @@ export const getParticipantEntryAmountsByFieldValue = async (fieldValueId) => {
   console.log('Response data.data:', data.data);
   if (!response.ok) throw new Error('Failed to fetch participant amounts');
   return data;
+};
+
+export const createSplitRule = async (templateId, name) => {
+  const params = new URLSearchParams({ name });
+  const response = await fetch(`${API_BASE_URL}/templates/${templateId}/split-rules?${params}`, {
+    method: 'POST',
+  });
+  if (!response.ok) throw new Error('Failed to create split rule');
+  return response.json();
+};
+
+export const addAllocationToRule = async (splitRuleId, participantId, percent) => {
+  const params = new URLSearchParams({ participantId, percent });
+  const response = await fetch(`${API_BASE_URL}/templates/split-rules/${splitRuleId}/allocations?${params}`, {
+    method: 'POST',
+  });
+  if (!response.ok) throw new Error('Failed to add allocation');
+  return response.json();
 };
