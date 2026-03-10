@@ -214,6 +214,16 @@ public class InstanceService {
     }
 
     public void deleteFieldValue(UUID fieldValueId) {
+        if (fieldValueId == null) {
+            throw new ValidationException("Field value ID is required");
+        }
+
+        InstanceFieldValue fieldValue = getFieldValueById(fieldValueId);
+
+        // Delete all ParticipantEntryAmount records for this field value first
+        participantEntryAmountRepository.deleteByInstanceFieldValueId(fieldValueId);
+
+        // Then delete the field value
         fieldValueRepository.deleteById(fieldValueId);
     }
 
