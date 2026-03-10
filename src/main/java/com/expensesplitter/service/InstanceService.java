@@ -1,5 +1,6 @@
 package com.expensesplitter.service;
 
+import com.expensesplitter.dto.AddFieldValueRequest;
 import com.expensesplitter.entity.*;
 import com.expensesplitter.enums.InstanceStatus;
 import com.expensesplitter.enums.SplitMode;
@@ -8,7 +9,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -105,46 +108,78 @@ public class InstanceService {
     }
 
     // Field Value Operations
-    public InstanceFieldValue addFieldValue(UUID instanceId, UUID templateFieldId, BigDecimal amount,
-                                            String note, java.time.LocalDate entryDate,
-                                            com.expensesplitter.enums.SplitMode splitMode,
-                                            UUID overrideSplitRuleId) {
+    public InstanceFieldValue addFieldValue(UUID instanceId, AddFieldValueRequest request) {
         if (instanceId == null) {
             throw new ValidationException("Instance ID is required");
         }
-        if (templateFieldId == null) {
+        if (request.getTemplateFieldId() == null) {
             throw new ValidationException("Template field ID is required");
         }
-        if (amount == null) {
-            throw new ValidationException("Amount is required");
+        if (request.getAmount() == null || request.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new ValidationException("Amount must be greater than zero");
         }
-        if (amount.compareTo(BigDecimal.ZERO) <= 0) {
+        if (request.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
             throw new ValidationException("Amount must be greater than zero");
         }
 
         TemplateInstance instance = getInstanceById(instanceId);
-        TemplateField templateField = templateService.getFieldById(templateFieldId);
+        TemplateField templateField = templateService.getFieldById(request.getTemplateFieldId());
 
         InstanceFieldValue fieldValue = new InstanceFieldValue();
         fieldValue.setInstance(instance);
         fieldValue.setTemplateField(templateField);
-        fieldValue.setAmount(amount);
-        fieldValue.setNote(note);
-        fieldValue.setEntryDate(entryDate);
-        fieldValue.setSplitMode(splitMode != null ? splitMode : SplitMode.TEMPLATE_FIELD_PERCENT_SPLIT);
+        fieldValue.setAmount(request.getAmount());
+        fieldValue.setNote(request.getNote());
+        fieldValue.setEntryDate(request.getEntryDate() != null ? request.getEntryDate() : LocalDate.now());
+        fieldValue.setSplitMode(request.getSplitMode() != null ? request.getSplitMode() : SplitMode.TEMPLATE_FIELD_PERCENT_SPLIT);
 
-        if (overrideSplitRuleId != null) {
-            SplitRule overrideRule = templateService.getSplitRuleById(overrideSplitRuleId);
+        if (request.getOverrideSplitRuleId() != null) {
+            SplitRule overrideRule = templateService.getSplitRuleById(request.getOverrideSplitRuleId());
             fieldValue.setOverrideSplitRule(overrideRule);
         }
 
         InstanceFieldValue savedInstanceFieldValue = fieldValueRepository.save(fieldValue);
 
-        if(savedInstanceFieldValue.getSplitMode() != SplitMode.FIELD_VALUE_FIXED_AMOUNTS) {
+        // Handle different split modes
+        if (fieldValue.getSplitMode() == SplitMode.FIELD_VALUE_FIXED_AMOUNTS) {
+            // For fixed amounts, create ParticipantEntryAmount records directly
+            createFixedAmountAllocations(savedInstanceFieldValue, request.getParticipantAmounts());
+        } else {
+            // For percentage-based splits, calculate allocations
             calculateAndCreateParticipantEntryAmounts(savedInstanceFieldValue);
         }
 
         return savedInstanceFieldValue;
+    }
+
+    private void createFixedAmountAllocations(InstanceFieldValue fieldValue, Map<UUID, BigDecimal> participantAmounts) {
+        if (participantAmounts == null || participantAmounts.isEmpty()) {
+            throw new ValidationException("Participant amounts are required for FIELD_VALUE_FIXED_AMOUNTS mode");
+        }
+
+        // Validate that amounts sum to the field value amount
+        BigDecimal totalAmount = participantAmounts.values()
+                .stream()
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        if (totalAmount.compareTo(fieldValue.getAmount()) != 0) {
+            throw new ValidationException("Participant amounts must sum to the total amount");
+        }
+
+        // Create ParticipantEntryAmount for each participant
+        for (Map.Entry<UUID, BigDecimal> entry : participantAmounts.entrySet()) {
+            UUID participantId = entry.getKey();
+            BigDecimal amount = entry.getValue();
+
+            TemplateParticipant participant = templateService.getParticipantById(participantId);
+
+            ParticipantEntryAmount participantAmount = new ParticipantEntryAmount();
+            participantAmount.setInstanceFieldValue(fieldValue);
+            participantAmount.setTemplateParticipant(participant);
+            participantAmount.setAmount(amount);
+
+            participantEntryAmountRepository.save(participantAmount);
+        }
     }
 
     public List<InstanceFieldValue> getFieldValuesByInstance(UUID instanceId) {
