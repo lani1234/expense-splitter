@@ -1,0 +1,1 @@
+ALTER TABLE instance_field_value ALTER COLUMN split_mode TYPE VARCHAR(50);

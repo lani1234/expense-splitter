@@ -236,17 +236,4 @@ public class InstanceService {
         }
     }
 
-    public InstanceFieldValue updateFieldValueSplitRule(UUID fieldValueId, UUID splitRuleId) {
-        InstanceFieldValue fieldValue = getFieldValueById(fieldValueId);
-        SplitRule splitRule = templateService.getSplitRuleById(splitRuleId);
-
-        fieldValue.setOverrideSplitRule(splitRule);
-        InstanceFieldValue updated = fieldValueRepository.save(fieldValue);
-
-        // Recalculate allocations with new split rule
-        participantEntryAmountRepository.deleteByInstanceFieldValueId(fieldValueId);
-        calculateAndCreateParticipantEntryAmounts(updated);
-
-        return updated;
-    }
 }
