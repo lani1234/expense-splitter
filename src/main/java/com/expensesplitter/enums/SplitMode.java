@@ -1,7 +1,7 @@
 package com.expensesplitter.enums;
 
 public enum SplitMode {
-    DEFAULT,
-    CUSTOM_PERCENT,
-    FIXED_AMOUNTS
+    TEMPLATE_FIELD_PERCENT_SPLIT,
+    FIELD_VALUE_CUSTOM_PERCENT,
+    FIELD_VALUE_FIXED_AMOUNTS
 }

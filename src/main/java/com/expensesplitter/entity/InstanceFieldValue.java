@@ -50,7 +50,7 @@ public class InstanceFieldValue {
     @PrePersist
     protected void onCreate() {
         if (this.splitMode == null) {
-            this.splitMode = SplitMode.DEFAULT;
+            this.splitMode = SplitMode.TEMPLATE_FIELD_PERCENT_SPLIT;
         }
     }
 }

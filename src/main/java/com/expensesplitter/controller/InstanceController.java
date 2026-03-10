@@ -141,4 +141,12 @@ public class InstanceController {
         instanceService.deleteFieldValue(fieldValueId);
         return ResponseEntity.ok(new ApiResponse<>(true, "Field value deleted successfully"));
     }
+
+    @PutMapping("/field-values/{fieldValueId}/split-rule")
+    public ResponseEntity<ApiResponse<InstanceFieldValue>> updateFieldValueSplitRule(
+            @PathVariable UUID fieldValueId,
+            @RequestParam UUID splitRuleId) {
+        InstanceFieldValue fieldValue = instanceService.updateFieldValueSplitRule(fieldValueId, splitRuleId);
+        return ResponseEntity.ok(new ApiResponse<>(true, fieldValue, "Split rule updated successfully"));
+    }
 }
