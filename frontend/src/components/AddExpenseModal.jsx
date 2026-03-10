@@ -12,7 +12,7 @@ export default function AddExpenseModal({ instanceId, onClose, onSuccess }) {
   const [amount, setAmount] = useState('');
   const [note, setNote] = useState('');
   const [entryDate, setEntryDate] = useState(new Date().toISOString().split('T')[0]);
-  const [splitMode, setSplitMode] = useState('DEFAULT');
+  const [splitMode, setSplitMode] = useState('TEMPLATE_FIELD_PERCENT_SPLIT');
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -176,8 +176,8 @@ export default function AddExpenseModal({ instanceId, onClose, onSuccess }) {
                 <input
                   type="radio"
                   name="splitMode"
-                  value="DEFAULT"
-                  checked={splitMode === 'DEFAULT'}
+                  value="TEMPLATE_FIELD_PERCENT_SPLIT"
+                  checked={splitMode === 'TEMPLATE_FIELD_PERCENT_SPLIT'}
                   onChange={(e) => setSplitMode(e.target.value)}
                   disabled={submitting}
                   className="mr-3"
@@ -188,7 +188,7 @@ export default function AddExpenseModal({ instanceId, onClose, onSuccess }) {
                 <input
                   type="radio"
                   name="splitMode"
-                  value="CUSTOM_PERCENT"
+                  value="FIELD_VALUE_CUSTOM_PERCENT"
                   onChange={(e) => setSplitMode(e.target.value)}
                   disabled={submitting}
                   className="mr-3"
@@ -199,7 +199,7 @@ export default function AddExpenseModal({ instanceId, onClose, onSuccess }) {
                 <input
                   type="radio"
                   name="splitMode"
-                  value="FIXED_AMOUNTS"
+                  value="FIELD_VALUE_FIXED_AMOUNTS"
                   onChange={(e) => setSplitMode(e.target.value)}
                   disabled={submitting}
                   className="mr-3"
