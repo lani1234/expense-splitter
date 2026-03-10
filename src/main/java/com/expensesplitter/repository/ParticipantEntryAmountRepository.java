@@ -11,4 +11,5 @@ import java.util.UUID;
 public interface ParticipantEntryAmountRepository extends JpaRepository<ParticipantEntryAmount, UUID> {
     List<ParticipantEntryAmount> findByInstanceFieldValueId(UUID instanceFieldValueId);
     List<ParticipantEntryAmount> findByTemplateParticipantId(UUID templateParticipantId);
+    void deleteByInstanceFieldValueId(UUID instanceFieldValueId);
 }

@@ -131,7 +131,7 @@ public class InstanceService {
         fieldValue.setAmount(amount);
         fieldValue.setNote(note);
         fieldValue.setEntryDate(entryDate);
-        fieldValue.setSplitMode(splitMode != null ? splitMode : SplitMode.DEFAULT);
+        fieldValue.setSplitMode(splitMode != null ? splitMode : SplitMode.TEMPLATE_FIELD_PERCENT_SPLIT);
 
         if (overrideSplitRuleId != null) {
             SplitRule overrideRule = templateService.getSplitRuleById(overrideSplitRuleId);
@@ -140,7 +140,7 @@ public class InstanceService {
 
         InstanceFieldValue savedInstanceFieldValue = fieldValueRepository.save(fieldValue);
 
-        if(savedInstanceFieldValue.getSplitMode() != SplitMode.FIXED_AMOUNTS) {
+        if(savedInstanceFieldValue.getSplitMode() != SplitMode.FIELD_VALUE_FIXED_AMOUNTS) {
             calculateAndCreateParticipantEntryAmounts(savedInstanceFieldValue);
         }
 
@@ -226,7 +226,7 @@ public class InstanceService {
                 fieldValue.setInstance(instance);
                 fieldValue.setTemplateField(field);
                 fieldValue.setAmount(field.getDefaultAmount());
-                fieldValue.setSplitMode(SplitMode.DEFAULT);
+                fieldValue.setSplitMode(SplitMode.TEMPLATE_FIELD_PERCENT_SPLIT);
 
                 InstanceFieldValue savedFieldValue = fieldValueRepository.save(fieldValue);
 
@@ -234,5 +234,19 @@ public class InstanceService {
                 calculateAndCreateParticipantEntryAmounts(savedFieldValue);
             }
         }
+    }
+
+    public InstanceFieldValue updateFieldValueSplitRule(UUID fieldValueId, UUID splitRuleId) {
+        InstanceFieldValue fieldValue = getFieldValueById(fieldValueId);
+        SplitRule splitRule = templateService.getSplitRuleById(splitRuleId);
+
+        fieldValue.setOverrideSplitRule(splitRule);
+        InstanceFieldValue updated = fieldValueRepository.save(fieldValue);
+
+        // Recalculate allocations with new split rule
+        participantEntryAmountRepository.deleteByInstanceFieldValueId(fieldValueId);
+        calculateAndCreateParticipantEntryAmounts(updated);
+
+        return updated;
     }
 }
