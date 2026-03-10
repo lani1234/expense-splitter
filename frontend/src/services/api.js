@@ -124,3 +124,11 @@ export const addAllocationToRule = async (splitRuleId, participantId, percent) =
   if (!response.ok) throw new Error('Failed to add allocation');
   return response.json();
 };
+
+export const deleteFieldValue = async (fieldValueId) => {
+  const response = await fetch(`${API_BASE_URL}/instances/field-values/${fieldValueId}`, {
+    method: 'DELETE',
+  });
+  if (!response.ok) throw new Error('Failed to delete field value');
+  return response.json();
+};

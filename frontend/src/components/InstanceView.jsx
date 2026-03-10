@@ -6,6 +6,7 @@ import {
   getTotalForParticipant,
   getTemplateParticipants,
   getParticipantEntryAmountsByFieldValue,
+  deleteFieldValue
 } from '../services/api';
 import AddExpenseModal from './AddExpenseModal';
 
@@ -86,6 +87,18 @@ export default function InstanceView() {
     const breakdown = getExpenseBreakdown(fieldValueId);
     const participantAmount = breakdown.find((p) => p.templateParticipant.id === participantId);
     return participantAmount ? participantAmount.amount : 0;
+  };
+
+  const handleDeleteExpense = async (fieldValueId) => {
+    if (window.confirm('Are you sure you want to delete this expense?')) {
+      try {
+        setError(null);
+        await deleteFieldValue(fieldValueId);
+        fetchInstanceData();
+      } catch (err) {
+        setError(err.message);
+      }
+    }
   };
 
   if (loading) {
@@ -224,6 +237,12 @@ export default function InstanceView() {
                   </div>
                   <button className="mt-4 text-blue-600 hover:text-blue-700 text-sm font-medium">
                     Edit
+                  </button>
+                  <button
+                    onClick={() => handleDeleteExpense(fieldValue.id)}
+                    className="mt-4 ml-4 text-red-600 hover:text-red-700 text-sm font-medium"
+                  >
+                    Delete
                   </button>
                 </div>
               ))}
