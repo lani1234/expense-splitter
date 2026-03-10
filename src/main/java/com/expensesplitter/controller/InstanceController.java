@@ -1,5 +1,6 @@
 package com.expensesplitter.controller;
 
+import com.expensesplitter.dto.AddFieldValueRequest;
 import com.expensesplitter.entity.InstanceFieldValue;
 import com.expensesplitter.entity.TemplateInstance;
 import com.expensesplitter.enums.InstanceStatus;
@@ -91,14 +92,8 @@ public class InstanceController {
     @PostMapping("/{instanceId}/field-values")
     public ResponseEntity<ApiResponse<InstanceFieldValue>> addFieldValue(
             @PathVariable UUID instanceId,
-            @RequestParam UUID templateFieldId,
-            @RequestParam BigDecimal amount,
-            @RequestParam(required = false) String note,
-            @RequestParam(required = false) LocalDate entryDate,
-            @RequestParam(required = false) SplitMode splitMode,
-            @RequestParam(required = false) UUID overrideSplitRuleId) {
-        InstanceFieldValue fieldValue = instanceService.addFieldValue(
-                instanceId, templateFieldId, amount, note, entryDate, splitMode, overrideSplitRuleId);
+            @RequestBody AddFieldValueRequest request) {
+        InstanceFieldValue fieldValue = instanceService.addFieldValue(instanceId, request);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(new ApiResponse<>(true, fieldValue, "Field value added successfully"));
     }

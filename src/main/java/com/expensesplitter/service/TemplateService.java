@@ -99,6 +99,9 @@ public class TemplateService {
     }
 
     public TemplateParticipant getParticipantById(UUID participantId) {
+        if (participantId == null) {
+            throw new ValidationException("Participant ID is required");
+        }
         return participantRepository.findById(participantId)
                 .orElseThrow(() -> new ResourceNotFoundException("Participant not found with id: " + participantId));
     }
