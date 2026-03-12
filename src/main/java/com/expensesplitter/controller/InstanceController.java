@@ -136,5 +136,13 @@ public class InstanceController {
         instanceService.deleteFieldValue(fieldValueId);
         return ResponseEntity.ok(new ApiResponse<>(true, "Field value deleted successfully"));
     }
+
+    @PutMapping("/field-values/{fieldValueId}/amount")
+    public ResponseEntity<ApiResponse<InstanceFieldValue>> updateFieldValueAmount(
+            @PathVariable UUID fieldValueId,
+            @RequestParam BigDecimal amount) {
+        InstanceFieldValue fieldValue = instanceService.updateFieldValueAmount(fieldValueId, amount);
+        return ResponseEntity.ok(new ApiResponse<>(true, fieldValue, "Field value amount updated successfully"));
+    }
     
 }

@@ -260,25 +260,55 @@ public class InstanceService {
         }
     }
 
-    // automatically create fieldvalue when default amounts are present on newly created fields
+    // automatically create fieldvalue for all newly created fields
     public void createDefaultFieldValues(UUID instanceId) {
         TemplateInstance instance = getInstanceById(instanceId);
         List<TemplateField> fields = templateService.getFieldsByTemplate(instance.getTemplate().getId());
 
         for (TemplateField field : fields) {
+            // Create a field value for every field, using default amount if available
+            InstanceFieldValue fieldValue = new InstanceFieldValue();
+            fieldValue.setInstance(instance);
+            fieldValue.setTemplateField(field);
+
+            // Use default amount if provided, otherwise 0
             if (field.getDefaultAmount() != null) {
-                InstanceFieldValue fieldValue = new InstanceFieldValue();
-                fieldValue.setInstance(instance);
-                fieldValue.setTemplateField(field);
                 fieldValue.setAmount(field.getDefaultAmount());
-                fieldValue.setSplitMode(SplitMode.TEMPLATE_FIELD_PERCENT_SPLIT);
+            } else {
+                fieldValue.setAmount(BigDecimal.ZERO);
+            }
 
-                InstanceFieldValue savedFieldValue = fieldValueRepository.save(fieldValue);
+            fieldValue.setSplitMode(SplitMode.TEMPLATE_FIELD_PERCENT_SPLIT);
 
-                // Calculate allocations for the default field value
+            InstanceFieldValue savedFieldValue = fieldValueRepository.save(fieldValue);
+
+            // Calculate allocations for fields with amounts
+            if (field.getDefaultAmount() != null && field.getDefaultAmount().compareTo(BigDecimal.ZERO) > 0) {
                 calculateAndCreateParticipantEntryAmounts(savedFieldValue);
             }
         }
+    }
+
+    public InstanceFieldValue updateFieldValueAmount(UUID fieldValueId, BigDecimal amount) {
+        if (fieldValueId == null) {
+            throw new ValidationException("Field value ID is required");
+        }
+        if (amount == null || amount.compareTo(BigDecimal.ZERO) < 0) {
+            throw new ValidationException("Amount must be zero or greater");
+        }
+
+        InstanceFieldValue fieldValue = getFieldValueById(fieldValueId);
+        fieldValue.setAmount(amount);
+        InstanceFieldValue updatedFieldValue = fieldValueRepository.save(fieldValue);
+
+        // Delete existing allocations and recalculate if amount > 0
+        participantEntryAmountRepository.deleteByInstanceFieldValueId(fieldValueId);
+
+        if (amount.compareTo(BigDecimal.ZERO) > 0) {
+            calculateAndCreateParticipantEntryAmounts(updatedFieldValue);
+        }
+
+        return updatedFieldValue;
     }
 
 }
