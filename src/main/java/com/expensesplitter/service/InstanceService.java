@@ -311,4 +311,22 @@ public class InstanceService {
         return updatedFieldValue;
     }
 
+    public InstanceFieldValue updateFieldValueSplitRule(UUID fieldValueId, UUID splitRuleId) {
+        if (fieldValueId == null) {
+            throw new ValidationException("Field value ID is required");
+        }
+
+        InstanceFieldValue fieldValue = getFieldValueById(fieldValueId);
+        SplitRule splitRule = templateService.getSplitRuleById(splitRuleId);
+
+        fieldValue.setOverrideSplitRule(splitRule);
+        InstanceFieldValue updatedFieldValue = fieldValueRepository.save(fieldValue);
+
+        // Recalculate allocations with new split rule
+        participantEntryAmountRepository.deleteByInstanceFieldValueId(fieldValueId);
+        calculateAndCreateParticipantEntryAmounts(updatedFieldValue);
+
+        return updatedFieldValue;
+    }
+
 }
