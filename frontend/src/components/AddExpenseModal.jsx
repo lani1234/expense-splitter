@@ -1,7 +1,13 @@
 import { useState, useEffect } from 'react';
-import { addFieldValue, getInstance, getTemplateFields, createSplitRule, addAllocationToRule } from '../services/api';
+import { addFieldValue, getInstance, getTemplateFields, createSplitRule, addAllocationToRule, updateFieldValueAmount, updateFieldValueSplitRule, getSplitRuleAllocations } from '../services/api';
 
-export default function AddExpenseModal({ instanceId, onClose, onSuccess }) {
+export default function AddExpenseModal({
+  instanceId,
+  selectedField,
+  selectedFieldValue,
+  onClose,
+  onSuccess
+}) {
   const [fields, setFields] = useState([]);
   const [participants, setParticipants] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -13,10 +19,14 @@ export default function AddExpenseModal({ instanceId, onClose, onSuccess }) {
   const [amount, setAmount] = useState('');
   const [note, setNote] = useState('');
   const [entryDate, setEntryDate] = useState(new Date().toISOString().split('T')[0]);
-  const [splitMode, setSplitMode] = useState('TEMPLATE_FIELD_PERCENT_SPLIT');
+  const [splitMode, setSplitMode] = useState(null);
   const [customPercentages, setCustomPercentages] = useState({});
   const [customAmounts, setCustomAmounts] = useState({});
   const [submitting, setSubmitting] = useState(false);
+
+  // Determine if we're editing an existing field value or creating a new one
+  const isEditingExisting = !!selectedFieldValue;
+  const modalTitle = isEditingExisting ? 'Configure Split' : 'Add Expense';
 
   useEffect(() => {
     fetchData();
@@ -35,12 +45,10 @@ export default function AddExpenseModal({ instanceId, onClose, onSuccess }) {
     }
   }, [amount, participants, splitMode]);
 
-  // When custom percentage changes, recalculate other percentages
   const handlePercentageChange = (participantId, newPercent) => {
     const newPercentages = { ...customPercentages };
     newPercentages[participantId] = parseFloat(newPercent) || 0;
 
-    // If there are 2 participants, auto-adjust the other one
     if (participants.length === 2) {
       const otherParticipant = participants.find((p) => p.id !== participantId);
       newPercentages[otherParticipant.id] = 100 - newPercentages[participantId];
@@ -49,12 +57,10 @@ export default function AddExpenseModal({ instanceId, onClose, onSuccess }) {
     setCustomPercentages(newPercentages);
   };
 
-  // When custom amount changes, recalculate other amounts
   const handleAmountChange = (participantId, newAmount) => {
     const newAmounts = { ...customAmounts };
     newAmounts[participantId] = parseFloat(newAmount) || 0;
 
-    // If there are 2 participants, auto-adjust the other one
     if (participants.length === 2) {
       const totalAmount = parseFloat(amount) || 0;
       const otherParticipant = participants.find((p) => p.id !== participantId);
@@ -69,16 +75,13 @@ export default function AddExpenseModal({ instanceId, onClose, onSuccess }) {
       setLoading(true);
       setError(null);
 
-      // Get the instance to find its template
       const instanceData = await getInstance(instanceId);
       const tId = instanceData.data.template.id;
       setTemplateId(tId);
 
-      // Get all fields for this template
       const fieldsData = await getTemplateFields(tId);
       setFields(fieldsData.data || []);
 
-      // Get participants
       const participantsData = await fetch(`http://localhost:8080/api/templates/${tId}/participants`);
       const parsedParticipants = await participantsData.json();
       setParticipants(parsedParticipants.data || []);
@@ -92,12 +95,50 @@ export default function AddExpenseModal({ instanceId, onClose, onSuccess }) {
         });
         setCustomPercentages(initialPercentages);
 
-        // Initialize custom amounts with equal split
         const initialAmounts = {};
         parsedParticipants.data.forEach((p) => {
           initialAmounts[p.id] = 0;
         });
         setCustomAmounts(initialAmounts);
+      }
+
+      // If editing existing field value, pre-populate fields
+      if (selectedFieldValue) {
+        setSelectedFieldId(selectedFieldValue.templateField.id);
+        setAmount(selectedFieldValue.amount.toString());
+        setNote(selectedFieldValue.note || '');
+        setEntryDate(selectedFieldValue.entryDate);
+        setSplitMode(selectedFieldValue.splitMode || 'TEMPLATE_FIELD_PERCENT_SPLIT');
+
+
+        // If editing existing field value with custom split, fetch current allocations
+        if (selectedFieldValue.overrideSplitRule) {
+          try {
+            const allocsData = await getSplitRuleAllocations(selectedFieldValue.overrideSplitRule.id);
+            if (allocsData.data && allocsData.data.length > 0) {
+              if (selectedFieldValue.splitMode === 'FIELD_VALUE_CUSTOM_PERCENT') {
+                const newPercentages = {};
+                allocsData.data.forEach((alloc) => {
+                  newPercentages[alloc.templateParticipant.id] = alloc.percent;
+                });
+                setCustomPercentages(newPercentages);
+              } else if (selectedFieldValue.splitMode === 'FIELD_VALUE_FIXED_AMOUNTS') {
+                // Convert percentages back to amounts
+                const fieldAmount = parseFloat(selectedFieldValue.amount);
+                const newAmounts = {};
+                allocsData.data.forEach((alloc) => {
+                  newAmounts[alloc.templateParticipant.id] = (fieldAmount * alloc.percent) / 100;
+                });
+                setCustomAmounts(newAmounts);
+              }
+            }
+          } catch (err) {
+            console.error('Failed to fetch allocations:', err);
+          }
+        }
+      } else if (selectedField) {
+        // If creating new for a specific field, pre-select it
+        setSelectedFieldId(selectedField.id);
       }
     } catch (err) {
       setError(err.message);
@@ -140,48 +181,69 @@ export default function AddExpenseModal({ instanceId, onClose, onSuccess }) {
       setSubmitting(true);
       setError(null);
 
-      let overrideSplitRuleId = null;
+      if (isEditingExisting) {
+        // For existing field value, update the split rule
+        if (splitMode === 'FIELD_VALUE_CUSTOM_PERCENT' || splitMode === 'FIELD_VALUE_FIXED_AMOUNTS') {
+          const splitRuleResponse = await createSplitRule(templateId, `Auto-generated split for ${amount}`);
+          const overrideSplitRuleId = splitRuleResponse.data.id;
 
-      // Create override split rule if needed
-      if (splitMode === 'FIELD_VALUE_CUSTOM_PERCENT' || splitMode === 'FIELD_VALUE_FIXED_AMOUNTS') {
-        // Create a split rule (unnamed, for this expense only)
-        const splitRuleResponse = await createSplitRule(templateId, `Auto-generated split for ${amount}`);
-        overrideSplitRuleId = splitRuleResponse.data.id;
-
-        // Add allocations to the split rule
-        if (splitMode === 'FIELD_VALUE_CUSTOM_PERCENT') {
-          for (const participantId of Object.keys(customPercentages)) {
-            await addAllocationToRule(overrideSplitRuleId, participantId, customPercentages[participantId]);
+          if (splitMode === 'FIELD_VALUE_CUSTOM_PERCENT') {
+            for (const participantId of Object.keys(customPercentages)) {
+              await addAllocationToRule(overrideSplitRuleId, participantId, customPercentages[participantId]);
+            }
+          } else {
+            const totalAmount = parseFloat(amount);
+            for (const participantId of Object.keys(customAmounts)) {
+              const percent = (customAmounts[participantId] / totalAmount) * 100;
+              await addAllocationToRule(overrideSplitRuleId, participantId, percent);
+            }
           }
-        } else {
-          // For fixed amounts, convert amounts to percentages
-          const totalAmount = parseFloat(amount);
-          for (const participantId of Object.keys(customAmounts)) {
-            const percent = (customAmounts[participantId] / totalAmount) * 100;
-            await addAllocationToRule(overrideSplitRuleId, participantId, percent);
+
+          // Update the field value with the new split rule
+          await updateFieldValueSplitRule(selectedFieldValue.id, overrideSplitRuleId);
+        } else if (splitMode === 'TEMPLATE_FIELD_PERCENT_SPLIT') {
+          // If switching back to template default, set override to null
+          // TODO: Add endpoint to clear override split rule
+        }
+      } else {
+        // For new field value, create it with the full data
+        let overrideSplitRuleId = null;
+
+        if (splitMode === 'FIELD_VALUE_CUSTOM_PERCENT' || splitMode === 'FIELD_VALUE_FIXED_AMOUNTS') {
+          const splitRuleResponse = await createSplitRule(templateId, `Auto-generated split for ${amount}`);
+          overrideSplitRuleId = splitRuleResponse.data.id;
+
+          if (splitMode === 'FIELD_VALUE_CUSTOM_PERCENT') {
+            for (const participantId of Object.keys(customPercentages)) {
+              await addAllocationToRule(overrideSplitRuleId, participantId, customPercentages[participantId]);
+            }
+          } else {
+            const totalAmount = parseFloat(amount);
+            for (const participantId of Object.keys(customAmounts)) {
+              const percent = (customAmounts[participantId] / totalAmount) * 100;
+              await addAllocationToRule(overrideSplitRuleId, participantId, percent);
+            }
           }
         }
+
+        const participantAmountsPayload = splitMode === 'FIELD_VALUE_FIXED_AMOUNTS'
+          ? Object.keys(customAmounts).reduce((acc, participantId) => {
+              acc[participantId] = customAmounts[participantId];
+              return acc;
+            }, {})
+          : null;
+
+        await addFieldValue(
+          instanceId,
+          selectedFieldId,
+          parseFloat(amount),
+          note,
+          entryDate,
+          splitMode,
+          overrideSplitRuleId,
+          participantAmountsPayload
+        );
       }
-
-    // Create the field value
-    // Convert participantAmounts to the format the backend expects (UUID as string keys)
-    const participantAmountsPayload = splitMode === 'FIELD_VALUE_FIXED_AMOUNTS'
-      ? Object.keys(customAmounts).reduce((acc, participantId) => {
-           acc[participantId] = customAmounts[participantId];
-           return acc;
-        }, {})
-      : null;
-
-    await addFieldValue(
-      instanceId,
-      selectedFieldId,
-      parseFloat(amount),
-      note,
-      entryDate,
-      splitMode,
-      overrideSplitRuleId,
-      participantAmountsPayload
-    );
 
       onSuccess();
     } catch (err) {
@@ -204,7 +266,7 @@ export default function AddExpenseModal({ instanceId, onClose, onSuccess }) {
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-lg p-8 w-full max-w-md max-h-[90vh] overflow-y-auto">
-        <h2 className="text-2xl font-bold text-gray-900 mb-6">Add Expense</h2>
+        <h2 className="text-2xl font-bold text-gray-900 mb-6">{modalTitle}</h2>
 
         {error && (
           <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded text-red-700 text-sm">
@@ -213,28 +275,30 @@ export default function AddExpenseModal({ instanceId, onClose, onSuccess }) {
         )}
 
         <form onSubmit={handleSubmit}>
-          {/* Field/Name */}
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Name *
-            </label>
-            <select
-              value={selectedFieldId}
-              onChange={(e) => setSelectedFieldId(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              required
-              disabled={submitting}
-            >
-              <option value="">Select a name...</option>
-              {fields.map((field) => (
-                <option key={field.id} value={field.id}>
-                  {field.label}
-                </option>
-              ))}
-            </select>
-          </div>
+          {/* Field/Name - Only show if creating new */}
+          {!isEditingExisting && (
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Name *
+              </label>
+              <select
+                value={selectedFieldId}
+                onChange={(e) => setSelectedFieldId(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                required
+                disabled={submitting}
+              >
+                <option value="">Select a name...</option>
+                {fields.map((field) => (
+                  <option key={field.id} value={field.id}>
+                    {field.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
-          {/* Amount */}
+          {/* Amount - Show but read-only if editing existing */}
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Amount *
@@ -250,39 +314,43 @@ export default function AddExpenseModal({ instanceId, onClose, onSuccess }) {
                 placeholder="0.00"
                 className="w-full pl-8 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 required
-                disabled={submitting}
+                disabled={submitting || isEditingExisting}
               />
             </div>
           </div>
 
-          {/* Date */}
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Date
-            </label>
-            <input
-              type="date"
-              value={entryDate}
-              onChange={(e) => setEntryDate(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              disabled={submitting}
-            />
-          </div>
+          {/* Date - Only show if creating new */}
+          {!isEditingExisting && (
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Date
+              </label>
+              <input
+                type="date"
+                value={entryDate}
+                onChange={(e) => setEntryDate(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                disabled={submitting}
+              />
+            </div>
+          )}
 
-          {/* Note */}
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Note
-            </label>
-            <input
-              type="text"
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              placeholder="Optional note"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              disabled={submitting}
-            />
-          </div>
+          {/* Note - Only show if creating new */}
+          {!isEditingExisting && (
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Note
+              </label>
+              <input
+                type="text"
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                placeholder="Optional note"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                disabled={submitting}
+              />
+            </div>
+          )}
 
           {/* Split Mode */}
           <div className="mb-6">
@@ -403,7 +471,7 @@ export default function AddExpenseModal({ instanceId, onClose, onSuccess }) {
               disabled={submitting}
               className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium disabled:opacity-50"
             >
-              {submitting ? 'Saving...' : 'Save Expense'}
+              {submitting ? 'Saving...' : (isEditingExisting ? 'Save Split' : 'Save Expense')}
             </button>
           </div>
         </form>

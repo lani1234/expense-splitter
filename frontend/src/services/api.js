@@ -96,13 +96,10 @@ export const getTemplateParticipants = async (templateId) => {
 };
 
 export const getParticipantEntryAmountsByFieldValue = async (fieldValueId) => {
-  console.log('Fetching amounts for fieldValueId:', fieldValueId);
   const response = await fetch(
     `${API_BASE_URL}/participant-entry-amounts/field-value/${fieldValueId}`
   );
   const data = await response.json();
-  console.log('Response data:', data);
-  console.log('Response data.data:', data.data);
   if (!response.ok) throw new Error('Failed to fetch participant amounts');
   return data;
 };
@@ -132,3 +129,40 @@ export const deleteFieldValue = async (fieldValueId) => {
   if (!response.ok) throw new Error('Failed to delete field value');
   return response.json();
 };
+
+export const updateFieldValueAmount = async (fieldValueId, amount) => {
+  const params = new URLSearchParams({ amount });
+  const response = await fetch(
+    `${API_BASE_URL}/instances/field-values/${fieldValueId}/amount?${params}`,
+    {
+      method: 'PUT',
+    }
+  );
+  if (!response.ok) throw new Error('Failed to update field value amount');
+  return response.json();
+};
+
+export const updateFieldValueSplitRule = async (fieldValueId, splitRuleId) => {
+  const params = new URLSearchParams({ splitRuleId });
+  const response = await fetch(
+    `${API_BASE_URL}/instances/field-values/${fieldValueId}/split-rule?${params}`,
+    {
+      method: 'PUT',
+    }
+  );
+  if (!response.ok) throw new Error('Failed to update split rule');
+  return response.json();
+};
+
+export const getSplitRule = async (splitRuleId) => {
+  const response = await fetch(`${API_BASE_URL}/templates/split-rules/${splitRuleId}`);
+  if (!response.ok) throw new Error('Failed to fetch split rule');
+  return response.json();
+};
+
+export const getSplitRuleAllocations = async (splitRuleId) => {
+  const response = await fetch(`${API_BASE_URL}/templates/split-rules/${splitRuleId}/allocations`);
+  if (!response.ok) throw new Error('Failed to fetch allocations');
+  return response.json();
+};
+
