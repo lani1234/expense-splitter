@@ -18,17 +18,26 @@ public class TemplateService {
     private final SplitRuleRepository splitRuleRepository;
     private final SplitRuleAllocationRepository splitRuleAllocationRepository;
     private final TemplateFieldRepository fieldRepository;
+    private final TemplateInstanceRepository instanceRepository;
+    private final InstanceFieldValueRepository fieldValueRepository;
+    private final ParticipantEntryAmountRepository participantEntryAmountRepository;
 
     public TemplateService(TemplateRepository templateRepository,
                            TemplateParticipantRepository participantRepository,
                            SplitRuleRepository splitRuleRepository,
                            SplitRuleAllocationRepository splitRuleAllocationRepository,
-                           TemplateFieldRepository fieldRepository) {
+                           TemplateFieldRepository fieldRepository,
+                           TemplateInstanceRepository instanceRepository,
+                           InstanceFieldValueRepository fieldValueRepository,
+                           ParticipantEntryAmountRepository participantEntryAmountRepository) {
         this.templateRepository = templateRepository;
         this.participantRepository = participantRepository;
         this.splitRuleRepository = splitRuleRepository;
         this.splitRuleAllocationRepository = splitRuleAllocationRepository;
         this.fieldRepository = fieldRepository;
+        this.instanceRepository = instanceRepository;
+        this.fieldValueRepository = fieldValueRepository;
+        this.participantEntryAmountRepository = participantEntryAmountRepository;
     }
 
     // Template CRUD Operations
@@ -71,6 +80,23 @@ public class TemplateService {
     }
 
     public void deleteTemplate(UUID templateId) {
+        // Delete instances and their field values/participant amounts
+        instanceRepository.findByTemplateId(templateId).forEach(instance -> {
+            fieldValueRepository.findByInstanceId(instance.getId()).forEach(fv -> {
+                participantEntryAmountRepository.deleteByInstanceFieldValueId(fv.getId());
+            });
+            fieldValueRepository.deleteAll(fieldValueRepository.findByInstanceId(instance.getId()));
+        });
+        instanceRepository.deleteAll(instanceRepository.findByTemplateId(templateId));
+
+        // Delete split rule allocations, fields, split rules, participants
+        splitRuleRepository.findByTemplateId(templateId).forEach(rule ->
+            splitRuleAllocationRepository.deleteAll(splitRuleAllocationRepository.findBySplitRuleId(rule.getId()))
+        );
+        fieldRepository.deleteAll(fieldRepository.findByTemplateIdOrderByDisplayOrder(templateId));
+        splitRuleRepository.deleteAll(splitRuleRepository.findByTemplateId(templateId));
+        participantRepository.deleteAll(participantRepository.findByTemplateIdOrderByDisplayOrder(templateId));
+
         templateRepository.deleteById(templateId);
     }
 

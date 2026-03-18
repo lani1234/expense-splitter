@@ -1,0 +1,1102 @@
+openapi: 3.0.0
+info:
+  title: Expense Splitter API
+  description: |
+    A REST API for managing shared expenses between multiple participants.
+    Users can create templates with fields and participants, create instances
+    from templates, and track expenses with flexible split rules (percentages or fixed amounts).
+  version: 1.0.0
+  contact:
+    name: Expense Splitter Team
+  license:
+    name: MIT
+
+servers:
+  - url: http://localhost:8080/api
+    description: Development server
+  - url: https://api.expensesplitter.com/api
+    description: Production server
+
+paths:
+  /templates:
+    post:
+      summary: Create a new template
+      tags:
+        - Templates
+      parameters:
+        - name: userId
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: name
+          in: query
+          required: true
+          schema:
+            type: string
+            maxLength: 255
+        - name: description
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        '201':
+          description: Template created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseTemplate'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /templates/user/{userId}:
+    get:
+      summary: Get all templates for a user
+      tags:
+        - Templates
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: List of templates
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseTemplateArray'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /templates/{templateId}:
+    get:
+      summary: Get a specific template
+      tags:
+        - Templates
+      parameters:
+        - name: templateId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Template details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseTemplate'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /templates/{templateId}/participants:
+    post:
+      summary: Add a participant to a template
+      tags:
+        - Participants
+      parameters:
+        - name: templateId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: name
+          in: query
+          required: true
+          schema:
+            type: string
+            maxLength: 255
+        - name: displayOrder
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        '201':
+          description: Participant added successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseTemplateParticipant'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    get:
+      summary: Get all participants for a template
+      tags:
+        - Participants
+      parameters:
+        - name: templateId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: List of participants
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseTemplateParticipantArray'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /templates/{templateId}/split-rules:
+    post:
+      summary: Create a split rule
+      tags:
+        - Split Rules
+      parameters:
+        - name: templateId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: name
+          in: query
+          required: true
+          schema:
+            type: string
+            maxLength: 255
+      responses:
+        '201':
+          description: Split rule created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseSplitRule'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    get:
+      summary: Get all split rules for a template
+      tags:
+        - Split Rules
+      parameters:
+        - name: templateId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: List of split rules
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseSplitRuleArray'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /templates/split-rules/{splitRuleId}:
+    get:
+      summary: Get a specific split rule
+      tags:
+        - Split Rules
+      parameters:
+        - name: splitRuleId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Split rule details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseSplitRule'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /templates/split-rules/{splitRuleId}/allocations:
+    post:
+      summary: Add an allocation to a split rule
+      tags:
+        - Split Rules
+      parameters:
+        - name: splitRuleId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: participantId
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: percent
+          in: query
+          required: true
+          schema:
+            type: number
+            format: decimal
+            minimum: 0
+            maximum: 100
+      responses:
+        '201':
+          description: Allocation added successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseSplitRuleAllocation'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    get:
+      summary: Get all allocations for a split rule
+      tags:
+        - Split Rules
+      parameters:
+        - name: splitRuleId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: List of allocations
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseSplitRuleAllocationArray'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /templates/{templateId}/fields:
+    post:
+      summary: Add a field to a template
+      tags:
+        - Fields
+      parameters:
+        - name: templateId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: label
+          in: query
+          required: true
+          schema:
+            type: string
+            maxLength: 255
+        - name: fieldType
+          in: query
+          required: true
+          schema:
+            $ref: '#/components/schemas/FieldType'
+        - name: defaultSplitRuleId
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+        - name: displayOrder
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: defaultAmount
+          in: query
+          required: false
+          schema:
+            type: number
+            format: decimal
+            minimum: 0
+      responses:
+        '201':
+          description: Field created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseTemplateField'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    get:
+      summary: Get all fields for a template
+      tags:
+        - Fields
+      parameters:
+        - name: templateId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: List of fields
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseTemplateFieldArray'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /instances:
+    post:
+      summary: Create an instance from a template
+      tags:
+        - Instances
+      parameters:
+        - name: templateId
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: name
+          in: query
+          required: true
+          schema:
+            type: string
+            maxLength: 255
+      responses:
+        '201':
+          description: Instance created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseTemplateInstance'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /instances/{instanceId}:
+    get:
+      summary: Get a specific instance
+      tags:
+        - Instances
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Instance details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseTemplateInstance'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /instances/template/{templateId}:
+    get:
+      summary: Get all instances for a template
+      tags:
+        - Instances
+      parameters:
+        - name: templateId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: List of instances
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseTemplateInstanceArray'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /instances/template/{templateId}/status/{status}:
+    get:
+      summary: Get instances by template and status
+      tags:
+        - Instances
+      parameters:
+        - name: templateId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: status
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/InstanceStatus'
+      responses:
+        '200':
+          description: List of instances with specified status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseTemplateInstanceArray'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /instances/{instanceId}/field-values:
+    post:
+      summary: Add a field value (expense) to an instance
+      tags:
+        - Field Values
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddFieldValueRequest'
+      responses:
+        '201':
+          description: Field value created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseInstanceFieldValue'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    get:
+      summary: Get all field values for an instance
+      tags:
+        - Field Values
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: List of field values
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseInstanceFieldValueArray'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /instances/field-values/{fieldValueId}:
+    delete:
+      summary: Delete a field value
+      tags:
+        - Field Values
+      parameters:
+        - name: fieldValueId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Field value deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseVoid'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /instances/field-values/{fieldValueId}/amount:
+    put:
+      summary: Update a field value's amount
+      tags:
+        - Field Values
+      parameters:
+        - name: fieldValueId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: amount
+          in: query
+          required: true
+          schema:
+            type: number
+            format: decimal
+            minimum: 0
+      responses:
+        '200':
+          description: Field value amount updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseInstanceFieldValue'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /instances/field-values/{fieldValueId}/split-rule:
+    put:
+      summary: Update a field value's split rule
+      tags:
+        - Field Values
+      parameters:
+        - name: fieldValueId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: splitRuleId
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Split rule updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseInstanceFieldValue'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /participant-entry-amounts:
+    get:
+      summary: Get all participant entry amounts
+      tags:
+        - Allocations
+      responses:
+        '200':
+          description: List of participant entry amounts
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseParticipantEntryAmountArray'
+
+  /participant-entry-amounts/instance/{instanceId}/participant/{participantId}/total:
+    get:
+      summary: Get total amount owed by a participant for an instance
+      tags:
+        - Allocations
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: participantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Total amount
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseBigDecimal'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /participant-entry-amounts/field-value/{fieldValueId}:
+    get:
+      summary: Get allocations for a field value
+      tags:
+        - Allocations
+      parameters:
+        - name: fieldValueId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: List of participant entry amounts for the field value
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseParticipantEntryAmountArray'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+components:
+  schemas:
+    # Enums
+    FieldType:
+      type: string
+      enum:
+        - SINGLE
+        - MULTIPLE
+      description: Type of template field
+
+    SplitMode:
+      type: string
+      enum:
+        - TEMPLATE_FIELD_PERCENT_SPLIT
+        - FIELD_VALUE_CUSTOM_PERCENT
+        - FIELD_VALUE_FIXED_AMOUNTS
+      description: How the expense is split
+
+    InstanceStatus:
+      type: string
+      enum:
+        - IN_PROGRESS
+        - SETTLED
+      description: Status of the instance
+
+    # Request/Response DTOs
+    AddFieldValueRequest:
+      type: object
+      required:
+        - templateFieldId
+        - amount
+      properties:
+        templateFieldId:
+          type: string
+          format: uuid
+        amount:
+          type: number
+          format: decimal
+          minimum: 0.01
+        note:
+          type: string
+          nullable: true
+        entryDate:
+          type: string
+          format: date
+          nullable: true
+        splitMode:
+          $ref: '#/components/schemas/SplitMode'
+        overrideSplitRuleId:
+          type: string
+          format: uuid
+          nullable: true
+        participantAmounts:
+          type: object
+          additionalProperties:
+            type: number
+            format: decimal
+          nullable: true
+          description: Required for FIELD_VALUE_FIXED_AMOUNTS mode
+
+    # Entity Models
+    Template:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+
+    TemplateParticipant:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        displayOrder:
+          type: integer
+
+    SplitRule:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        template:
+          $ref: '#/components/schemas/Template'
+
+    SplitRuleAllocation:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        percent:
+          type: number
+          format: decimal
+        splitRule:
+          $ref: '#/components/schemas/SplitRule'
+        templateParticipant:
+          $ref: '#/components/schemas/TemplateParticipant'
+
+    TemplateField:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        label:
+          type: string
+        fieldType:
+          $ref: '#/components/schemas/FieldType'
+        displayOrder:
+          type: integer
+        defaultAmount:
+          type: number
+          format: decimal
+          nullable: true
+        defaultSplitRule:
+          $ref: '#/components/schemas/SplitRule'
+          nullable: true
+
+    TemplateInstance:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        template:
+          $ref: '#/components/schemas/Template'
+        name:
+          type: string
+        status:
+          $ref: '#/components/schemas/InstanceStatus'
+        createdAt:
+          type: string
+          format: date-time
+
+    InstanceFieldValue:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        instance:
+          $ref: '#/components/schemas/TemplateInstance'
+        templateField:
+          $ref: '#/components/schemas/TemplateField'
+        amount:
+          type: number
+          format: decimal
+        note:
+          type: string
+          nullable: true
+        entryDate:
+          type: string
+          format: date
+        splitMode:
+          $ref: '#/components/schemas/SplitMode'
+        overrideSplitRule:
+          $ref: '#/components/schemas/SplitRule'
+          nullable: true
+
+    ParticipantEntryAmount:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        instanceFieldValue:
+          $ref: '#/components/schemas/InstanceFieldValue'
+        templateParticipant:
+          $ref: '#/components/schemas/TemplateParticipant'
+        amount:
+          type: number
+          format: decimal
+
+    # API Response Wrappers
+    ApiResponseTemplate:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          $ref: '#/components/schemas/Template'
+        message:
+          type: string
+          nullable: true
+
+    ApiResponseTemplateArray:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Template'
+        message:
+          type: string
+          nullable: true
+
+    ApiResponseTemplateParticipant:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          $ref: '#/components/schemas/TemplateParticipant'
+        message:
+          type: string
+          nullable: true
+
+    ApiResponseTemplateParticipantArray:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/TemplateParticipant'
+        message:
+          type: string
+          nullable: true
+
+    ApiResponseSplitRule:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          $ref: '#/components/schemas/SplitRule'
+        message:
+          type: string
+          nullable: true
+
+    ApiResponseSplitRuleArray:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/SplitRule'
+        message:
+          type: string
+          nullable: true
+
+    ApiResponseSplitRuleAllocation:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          $ref: '#/components/schemas/SplitRuleAllocation'
+        message:
+          type: string
+          nullable: true
+
+    ApiResponseSplitRuleAllocationArray:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/SplitRuleAllocation'
+        message:
+          type: string
+          nullable: true
+
+    ApiResponseTemplateField:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          $ref: '#/components/schemas/TemplateField'
+        message:
+          type: string
+          nullable: true
+
+    ApiResponseTemplateFieldArray:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/TemplateField'
+        message:
+          type: string
+          nullable: true
+
+    ApiResponseTemplateInstance:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          $ref: '#/components/schemas/TemplateInstance'
+        message:
+          type: string
+          nullable: true
+
+    ApiResponseTemplateInstanceArray:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/TemplateInstance'
+        message:
+          type: string
+          nullable: true
+
+    ApiResponseInstanceFieldValue:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          $ref: '#/components/schemas/InstanceFieldValue'
+        message:
+          type: string
+          nullable: true
+
+    ApiResponseInstanceFieldValueArray:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/InstanceFieldValue'
+        message:
+          type: string
+          nullable: true
+
+    ApiResponseParticipantEntryAmount:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          $ref: '#/components/schemas/ParticipantEntryAmount'
+        message:
+          type: string
+          nullable: true
+
+    ApiResponseParticipantEntryAmountArray:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/ParticipantEntryAmount'
+        message:
+          type: string
+          nullable: true
+
+    ApiResponseBigDecimal:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: number
+          format: decimal
+        message:
+          type: string
+          nullable: true
+
+    ApiResponseVoid:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+
+  responses:
+    BadRequest:
+      description: Bad request - validation error
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+                example: false
+              message:
+                type: string
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+                example: false
+              message:
+                type: string
+
+tags:
+  - name: Templates
+    description: Template management
+  - name: Participants
+    description: Participant management
+  - name: Split Rules
+    description: Split rule management
+  - name: Fields
+    description: Template field management
+  - name: Instances
+    description: Instance management
+  - name: Field Values
+    description: Field value (expense) management
+  - name: Allocations
+    description: Participant entry amount management
