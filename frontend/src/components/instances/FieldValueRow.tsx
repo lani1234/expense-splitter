@@ -3,9 +3,9 @@ import { Pencil, Trash2, Check, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import SplitEditor from "./SplitEditor"
-import { useUpdateFieldValueAmount, useUpdateFieldValueSplitRule, useDeleteFieldValue } from "@/hooks/useFieldValues"
+import { useUpdateFieldValueAmount, useUpdateFieldValueSplitRule, useDeleteFieldValue, useAmountsByFieldValue } from "@/hooks/useFieldValues"
+import { useParticipants, useAllocations } from "@/hooks/useTemplates"
 import type { InstanceFieldValue, SplitMode } from "@/types"
-import { useSplitRules } from "@/hooks/useTemplates"
 import { useToast } from "@/hooks/use-toast"
 
 interface Props {
@@ -14,6 +14,7 @@ interface Props {
   instanceId: string
   isDeletable: boolean
   isSettled: boolean
+  defaultSplitRuleId?: string
 }
 
 export default function FieldValueRow({
@@ -22,12 +23,35 @@ export default function FieldValueRow({
   instanceId,
   isDeletable,
   isSettled,
+  defaultSplitRuleId,
 }: Props) {
   const { toast } = useToast()
-  const { data: splitRules = [] } = useSplitRules(templateId)
   const updateAmount = useUpdateFieldValueAmount(instanceId)
   const updateSplitRule = useUpdateFieldValueSplitRule(instanceId)
   const deleteFieldValue = useDeleteFieldValue(instanceId)
+
+  const { data: participantEntryAmounts = [] } = useAmountsByFieldValue(fieldValue.id)
+  const { data: participants = [] } = useParticipants(templateId)
+
+  const effectiveSplitRuleId =
+    fieldValue.splitMode === "FIELD_VALUE_CUSTOM_PERCENT"
+      ? fieldValue.overrideSplitRuleId
+      : fieldValue.splitMode === "TEMPLATE_FIELD_PERCENT_SPLIT"
+      ? defaultSplitRuleId
+      : undefined
+
+  const { data: allocations = [] } = useAllocations(effectiveSplitRuleId ?? "")
+
+  const participantChips = participantEntryAmounts.map((pea) => {
+    const participant = participants.find((p) => p.id === pea.templateParticipantId)
+    const name = participant?.name ?? "?"
+    if (fieldValue.splitMode === "FIELD_VALUE_FIXED_AMOUNTS") {
+      return `${name} Fixed $${pea.amount.toFixed(2)}`
+    }
+    const allocation = allocations.find((a) => a.templateParticipantId === pea.templateParticipantId)
+    const pct = allocation?.percent ?? (fieldValue.amount > 0 ? (pea.amount / fieldValue.amount) * 100 : 0)
+    return `${name} ${Math.round(pct)}% $${pea.amount.toFixed(2)}`
+  })
 
   const [editing, setEditing] = useState(false)
   const [amount, setAmount] = useState(String(fieldValue.amount))
@@ -36,17 +60,6 @@ export default function FieldValueRow({
   const [splitRuleId, setSplitRuleId] = useState(fieldValue.overrideSplitRuleId ?? "")
   const [fixedAmounts, setFixedAmounts] = useState<Record<string, number>>({})
   const [saving, setSaving] = useState(false)
-
-  const currentRule = splitRules.find(
-    (r) =>
-      r.id === fieldValue.overrideSplitRuleId ||
-      (fieldValue.splitMode === "TEMPLATE_FIELD_PERCENT_SPLIT" && r.id === fieldValue.overrideSplitRuleId)
-  )
-
-  const splitLabel =
-    fieldValue.splitMode === "FIELD_VALUE_FIXED_AMOUNTS"
-      ? "Fixed"
-      : currentRule?.name ?? "Default"
 
   const handleSave = async () => {
     setSaving(true)
@@ -164,12 +177,19 @@ export default function FieldValueRow({
 
   return (
     <div className="flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-surface-elevated group">
-      <span className="w-28 text-sm font-semibold text-foreground">
+      <span className="w-28 text-sm font-semibold text-foreground shrink-0">
         ${fieldValue.amount.toFixed(2)}
       </span>
-      <span className="flex-1 text-sm text-muted-foreground">{fieldValue.note ?? "—"}</span>
-      <span className="text-xs rounded bg-surface px-1.5 py-0.5 text-muted-foreground">
-        {splitLabel}
+      {fieldValue.note && (
+        <span className="text-xs text-muted-foreground italic shrink-0">{fieldValue.note}</span>
+      )}
+      <span className="flex-1 flex items-center justify-end flex-wrap gap-y-0.5">
+        {participantChips.map((chip, i) => (
+          <span key={i} className="text-xs text-muted-foreground whitespace-nowrap">
+            {i > 0 && <span className="mx-1.5 opacity-40">·</span>}
+            {chip}
+          </span>
+        ))}
       </span>
       {!isSettled && (
         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">

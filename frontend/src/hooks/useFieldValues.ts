@@ -15,6 +15,14 @@ export function useParticipantTotal(instanceId: string, participantId: string) {
   })
 }
 
+export function useAmountsByFieldValue(fieldValueId: string) {
+  return useQuery({
+    queryKey: ["participant-entry-amounts", "field-value", fieldValueId],
+    queryFn: () => amountsApi.getAmountsByFieldValue(fieldValueId),
+    enabled: !!fieldValueId,
+  })
+}
+
 export function useAddFieldValue(instanceId: string) {
   const qc = useQueryClient()
   return useMutation({

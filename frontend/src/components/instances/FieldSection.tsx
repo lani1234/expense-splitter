@@ -102,6 +102,7 @@ export default function FieldSection({
                 instanceId={instanceId}
                 isDeletable={isMultiple}
                 isSettled={isSettled}
+                defaultSplitRuleId={field.defaultSplitRuleId}
               />
             ))}
           </div>
