@@ -13,11 +13,11 @@ mvn clean install         # Build (skip tests: add -DskipTests)
 ```
 
 ### Frontend (Vite / React — in `frontend/`)
-The frontend is in early setup. Once a `package.json` exists:
 ```bash
+cd frontend
 npm install
-npm run dev    # Dev server
-npm run build  # Production build
+npm run dev    # Dev server (proxies /api → http://localhost:8080)
+npm run build  # Production build (tsc + vite)
 ```
 
 ### Database
@@ -45,6 +45,15 @@ Three modes for how a field value's amount is split:
 1. `TEMPLATE_FIELD_PERCENT_SPLIT` — uses the field's `default_split_rule_id`
 2. `FIELD_VALUE_CUSTOM_PERCENT` — override with a custom `override_split_rule_id` on the field value
 3. `FIELD_VALUE_FIXED_AMOUNTS` — direct fixed amounts per participant in `ParticipantEntryAmount`
+
+### Frontend
+React 18 / TypeScript SPA in `frontend/src/`:
+
+- **Stack** — React Router v6, TanStack Query (30s staleTime), Axios, Tailwind CSS, shadcn/ui components (Radix UI primitives in `components/ui/`). Path alias `@` maps to `src/`.
+- **API layer** — `src/api/client.ts` wraps Axios and automatically unwraps `ApiResponse<T>`, throwing on `success=false`. Module files (`templates.ts`, `instances.ts`, `participantAmounts.ts`) expose typed functions consumed by hooks in `src/hooks/`.
+- **Types** — `src/types/index.ts` mirrors all backend entities and enums. Keep in sync with backend changes.
+- **Auth** — No authentication yet. `CURRENT_USER_ID` in `src/config/constants.ts` is a hardcoded UUID used for all API calls.
+- **Routes** — `/templates`, `/instances`, `/instances/:id`, `/settled` — all nested under `AppShell`.
 
 ### API Documentation
 Full API contracts are in `src/main/resources/api/docs/expense-splitter-api-contracts.md` and the OpenAPI spec is in `expense-splitter-openapi.yaml` in the same folder.
