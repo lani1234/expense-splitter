@@ -153,7 +153,7 @@ export default function InstanceDetailPage() {
               Reopen
             </Button>
           ) : (
-            <Button size="sm" onClick={handleSettle} disabled={settle.isPending}>
+            <Button size="sm" onClick={handleSettle} disabled={settle.isPending} className="bg-emerald-500 hover:bg-emerald-600 text-white">
               <CheckCircle2 className="h-3.5 w-3.5 mr-1.5" />
               Settle
             </Button>

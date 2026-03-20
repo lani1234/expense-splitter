@@ -39,7 +39,7 @@ export default function InstanceCard({ instance, templateName }: Props) {
 
   return (
     <Card
-      className="bg-surface border-border hover:border-primary/40 transition-colors cursor-pointer"
+      className="bg-surface border-border shadow-sm hover:shadow-md hover:border-primary/40 transition-all cursor-pointer"
       onClick={() => navigate(`/instances/${instance.id}`)}
     >
       <CardContent className="py-4 space-y-2">

@@ -32,7 +32,7 @@ export default function TemplateCard({ template, onNewInstance }: Props) {
   }
 
   return (
-    <Card className="bg-surface border-border hover:border-primary/40 transition-colors">
+    <Card className="bg-surface border-border shadow-sm hover:shadow-md hover:border-primary/40 transition-all">
       <CardHeader className="pb-2">
         <div className="flex items-start justify-between">
           <div>

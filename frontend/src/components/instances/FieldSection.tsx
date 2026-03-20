@@ -83,13 +83,13 @@ export default function FieldSection({
   return (
     <div className="space-y-1">
       <div className="flex items-center gap-2 mb-2">
-        <h3 className="font-semibold text-foreground">{field.label}</h3>
+        <h3 className="font-semibold text-foreground pl-2 border-l-2 border-primary">{field.label}</h3>
         <Badge variant="outline" className="text-xs border-border text-muted-foreground">
           {field.fieldType}
         </Badge>
       </div>
 
-      <div className="rounded-lg border border-border bg-surface overflow-hidden">
+      <div className="rounded-lg border border-border bg-surface overflow-hidden shadow-sm">
         {fieldValues.length === 0 ? (
           <p className="px-3 py-2 text-sm text-muted-foreground italic">No entries yet</p>
         ) : (

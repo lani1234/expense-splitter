@@ -177,7 +177,7 @@ export default function FieldValueRow({
 
   return (
     <div className="flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-surface-elevated group">
-      <span className="w-28 text-sm font-semibold text-foreground shrink-0">
+      <span className="shrink-0 text-sm font-semibold text-foreground tabular-nums">
         ${fieldValue.amount.toFixed(2)}
       </span>
       {fieldValue.note && (

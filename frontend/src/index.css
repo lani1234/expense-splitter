@@ -4,8 +4,8 @@
 
 @layer base {
   :root {
-    /* Light blue-white page background */
-    --background: 232 100% 97%;
+    /* Medium blue page background — cards pop against this */
+    --background: 224 60% 90%;
     --foreground: 222 72% 15%;
 
     --card: 0 0% 100%;
@@ -30,15 +30,15 @@
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 220 20% 88%;
-    --input: 220 20% 88%;
+    --border: 220 25% 85%;
+    --input: 220 25% 85%;
     --ring: 222 91% 60%;
 
     --radius: 0.75rem;
 
     /* Custom surface tokens */
     --surface: 0 0% 100%;
-    --surface-elevated: 220 40% 97%;
+    --surface-elevated: 224 30% 95%;
 
     /* Dark navy navbar */
     --nav: 222 72% 15%;
