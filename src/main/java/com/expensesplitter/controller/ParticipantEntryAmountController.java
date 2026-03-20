@@ -1,6 +1,6 @@
 package com.expensesplitter.controller;
 
-import com.expensesplitter.entity.ParticipantEntryAmount;
+import com.expensesplitter.dto.ParticipantEntryAmountResponse;
 import com.expensesplitter.service.ParticipantEntryAmountService;
 import com.expensesplitter.service.ApiResponse;
 import org.springframework.http.HttpStatus;
@@ -23,32 +23,36 @@ public class ParticipantEntryAmountController {
 
     // ParticipantEntryAmount CRUD Operations
     @PostMapping
-    public ResponseEntity<ApiResponse<ParticipantEntryAmount>> createParticipantEntryAmount(
+    public ResponseEntity<ApiResponse<ParticipantEntryAmountResponse>> createParticipantEntryAmount(
             @RequestParam UUID fieldValueId,
             @RequestParam UUID participantId,
             @RequestParam BigDecimal amount) {
-        ParticipantEntryAmount participantEntryAmount = participantEntryAmountService.createParticipantEntryAmount(fieldValueId, participantId, amount);
+        ParticipantEntryAmountResponse participantEntryAmount = ParticipantEntryAmountResponse.from(
+                participantEntryAmountService.createParticipantEntryAmount(fieldValueId, participantId, amount));
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(new ApiResponse<>(true, participantEntryAmount, "ParticipantEntryAmount created successfully"));
     }
 
     @GetMapping("/{participantEntryAmountId}")
-    public ResponseEntity<ApiResponse<ParticipantEntryAmount>> getParticipantEntryAmount(@PathVariable UUID participantEntryAmountId) {
-        ParticipantEntryAmount participantEntryAmount = participantEntryAmountService.getParticipantEntryAmountById(participantEntryAmountId);
+    public ResponseEntity<ApiResponse<ParticipantEntryAmountResponse>> getParticipantEntryAmount(@PathVariable UUID participantEntryAmountId) {
+        ParticipantEntryAmountResponse participantEntryAmount = ParticipantEntryAmountResponse.from(
+                participantEntryAmountService.getParticipantEntryAmountById(participantEntryAmountId));
         return ResponseEntity.ok(new ApiResponse<>(true, participantEntryAmount));
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<ParticipantEntryAmount>>> getAllParticipantEntryAmounts() {
-        List<ParticipantEntryAmount> participantEntryAmounts = participantEntryAmountService.getAllParticipantEntryAmounts();
+    public ResponseEntity<ApiResponse<List<ParticipantEntryAmountResponse>>> getAllParticipantEntryAmounts() {
+        List<ParticipantEntryAmountResponse> participantEntryAmounts = participantEntryAmountService.getAllParticipantEntryAmounts()
+                .stream().map(ParticipantEntryAmountResponse::from).toList();
         return ResponseEntity.ok(new ApiResponse<>(true, participantEntryAmounts));
     }
 
     @PutMapping("/{participantEntryAmountId}")
-    public ResponseEntity<ApiResponse<ParticipantEntryAmount>> updateParticipantEntryAmount(
+    public ResponseEntity<ApiResponse<ParticipantEntryAmountResponse>> updateParticipantEntryAmount(
             @PathVariable UUID participantEntryAmountId,
             @RequestParam BigDecimal amount) {
-        ParticipantEntryAmount participantEntryAmount = participantEntryAmountService.updateParticipantEntryAmount(participantEntryAmountId, amount);
+        ParticipantEntryAmountResponse participantEntryAmount = ParticipantEntryAmountResponse.from(
+                participantEntryAmountService.updateParticipantEntryAmount(participantEntryAmountId, amount));
         return ResponseEntity.ok(new ApiResponse<>(true, participantEntryAmount, "ParticipantEntryAmount updated successfully"));
     }
 
@@ -60,16 +64,18 @@ public class ParticipantEntryAmountController {
 
     // Query Endpoints
     @GetMapping("/field-value/{fieldValueId}")
-    public ResponseEntity<ApiResponse<List<ParticipantEntryAmount>>> getParticipantEntryAmountsByFieldValue(
+    public ResponseEntity<ApiResponse<List<ParticipantEntryAmountResponse>>> getParticipantEntryAmountsByFieldValue(
             @PathVariable UUID fieldValueId) {
-        List<ParticipantEntryAmount> participantEntryAmounts = participantEntryAmountService.getParticipantEntryAmountsByFieldValue(fieldValueId);
+        List<ParticipantEntryAmountResponse> participantEntryAmounts = participantEntryAmountService.getParticipantEntryAmountsByFieldValue(fieldValueId)
+                .stream().map(ParticipantEntryAmountResponse::from).toList();
         return ResponseEntity.ok(new ApiResponse<>(true, participantEntryAmounts));
     }
 
     @GetMapping("/participant/{participantId}")
-    public ResponseEntity<ApiResponse<List<ParticipantEntryAmount>>> getParticipantEntryAmountsByParticipant(
+    public ResponseEntity<ApiResponse<List<ParticipantEntryAmountResponse>>> getParticipantEntryAmountsByParticipant(
             @PathVariable UUID participantId) {
-        List<ParticipantEntryAmount> participantEntryAmounts = participantEntryAmountService.getParticipantEntryAmountsByParticipant(participantId);
+        List<ParticipantEntryAmountResponse> participantEntryAmounts = participantEntryAmountService.getParticipantEntryAmountsByParticipant(participantId)
+                .stream().map(ParticipantEntryAmountResponse::from).toList();
         return ResponseEntity.ok(new ApiResponse<>(true, participantEntryAmounts));
     }
 
