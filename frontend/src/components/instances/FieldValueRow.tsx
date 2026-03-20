@@ -42,15 +42,25 @@ export default function FieldValueRow({
 
   const { data: allocations = [] } = useAllocations(effectiveSplitRuleId ?? "")
 
-  const participantChips = participantEntryAmounts.map((pea) => {
-    const participant = participants.find((p) => p.id === pea.templateParticipantId)
-    const name = participant?.name ?? "?"
+  const PARTICIPANT_COLORS = [
+    { bg: "bg-blue-50 border-blue-200",       text: "text-blue-700"    },
+    { bg: "bg-violet-50 border-violet-200",   text: "text-violet-700"  },
+    { bg: "bg-emerald-50 border-emerald-200", text: "text-emerald-700" },
+    { bg: "bg-orange-50 border-orange-200",   text: "text-orange-700"  },
+  ]
+
+  const participantData = participantEntryAmounts.map((pea) => {
+    const participantIndex = participants.findIndex((p) => p.id === pea.templateParticipantId)
+    const name = participants[participantIndex]?.name ?? "?"
+    let split: string
     if (fieldValue.splitMode === "FIELD_VALUE_FIXED_AMOUNTS") {
-      return `${name} Fixed $${pea.amount.toFixed(2)}`
+      split = "Fixed"
+    } else {
+      const allocation = allocations.find((a) => a.templateParticipantId === pea.templateParticipantId)
+      const pct = allocation?.percent ?? (fieldValue.amount > 0 ? (pea.amount / fieldValue.amount) * 100 : 0)
+      split = `${Math.round(pct)}%`
     }
-    const allocation = allocations.find((a) => a.templateParticipantId === pea.templateParticipantId)
-    const pct = allocation?.percent ?? (fieldValue.amount > 0 ? (pea.amount / fieldValue.amount) * 100 : 0)
-    return `${name} ${Math.round(pct)}% $${pea.amount.toFixed(2)}`
+    return { name, split, amount: `$${pea.amount.toFixed(2)}`, colorIndex: Math.max(participantIndex, 0) }
   })
 
   const [editing, setEditing] = useState(false)
@@ -177,22 +187,31 @@ export default function FieldValueRow({
 
   return (
     <div className="flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-surface-elevated group">
-      <span className="shrink-0 text-sm font-semibold text-foreground tabular-nums">
+      <span className="shrink-0 text-sm font-semibold text-foreground tabular-nums min-w-[5.5rem]">
         ${fieldValue.amount.toFixed(2)}
       </span>
       {fieldValue.note && (
         <span className="text-xs text-muted-foreground italic shrink-0">{fieldValue.note}</span>
       )}
-      <span className="flex-1 flex items-center justify-end flex-wrap gap-y-0.5">
-        {participantChips.map((chip, i) => (
-          <span key={i} className="text-xs text-muted-foreground whitespace-nowrap">
-            {i > 0 && <span className="mx-1.5 opacity-40">·</span>}
-            {chip}
-          </span>
-        ))}
+      <span className="flex-1 flex items-center justify-end flex-wrap gap-1.5">
+        {participantData.map(({ name, split, amount, colorIndex }, i) => {
+          const colors = PARTICIPANT_COLORS[colorIndex % PARTICIPANT_COLORS.length]
+          return (
+            <span
+              key={i}
+              className={`text-xs rounded-full border px-2.5 py-0.5 whitespace-nowrap inline-flex items-center gap-1.5 ${colors.bg} ${colors.text}`}
+            >
+              <span className="font-semibold">{name}</span>
+              <span className="opacity-40">·</span>
+              <span className="opacity-70 min-w-[2.25rem] text-center">{split}</span>
+              <span className="opacity-40">·</span>
+              <span className="font-semibold tabular-nums min-w-[4rem] text-right">{amount}</span>
+            </span>
+          )
+        })}
       </span>
       {!isSettled && (
-        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity w-[3.25rem] shrink-0">
           <Button
             variant="ghost"
             size="icon"
