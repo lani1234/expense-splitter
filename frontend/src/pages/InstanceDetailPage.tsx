@@ -63,6 +63,7 @@ export default function InstanceDetailPage() {
   const handleSettle = async () => {
     if (!confirm("Mark this instance as settled?")) return
     await settle.mutateAsync(instance.id)
+    navigate("/settled")
   }
 
   const handleReopen = async () => {
