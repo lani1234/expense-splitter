@@ -1,6 +1,7 @@
 package com.expensesplitter.controller;
 
-import com.expensesplitter.entity.*;
+import com.expensesplitter.dto.*;
+import com.expensesplitter.entity.Template;
 import com.expensesplitter.enums.FieldType;
 import com.expensesplitter.service.ApiResponse;
 import com.expensesplitter.service.TemplateService;
@@ -22,7 +23,7 @@ public class TemplateController {
         this.templateService = templateService;
     }
 
-    // Template Endpoints
+    // Template Endpoints (Template has no nested @ManyToOne — no DTO needed)
     @PostMapping
     public ResponseEntity<ApiResponse<Template>> createTemplate(
             @RequestParam UUID userId,
@@ -68,18 +69,20 @@ public class TemplateController {
 
     // Participant Endpoints
     @PostMapping("/{templateId}/participants")
-    public ResponseEntity<ApiResponse<TemplateParticipant>> addParticipant(
+    public ResponseEntity<ApiResponse<TemplateParticipantResponse>> addParticipant(
             @PathVariable UUID templateId,
             @RequestParam String name,
             @RequestParam int displayOrder) {
-        TemplateParticipant participant = templateService.addParticipant(templateId, name, displayOrder);
+        TemplateParticipantResponse participant = TemplateParticipantResponse.from(
+                templateService.addParticipant(templateId, name, displayOrder));
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(new ApiResponse<>(true, participant, "Participant added successfully"));
     }
 
     @GetMapping("/{templateId}/participants")
-    public ResponseEntity<ApiResponse<List<TemplateParticipant>>> getParticipants(@PathVariable UUID templateId) {
-        List<TemplateParticipant> participants = templateService.getParticipantsByTemplate(templateId);
+    public ResponseEntity<ApiResponse<List<TemplateParticipantResponse>>> getParticipants(@PathVariable UUID templateId) {
+        List<TemplateParticipantResponse> participants = templateService.getParticipantsByTemplate(templateId)
+                .stream().map(TemplateParticipantResponse::from).toList();
         return ResponseEntity.ok(new ApiResponse<>(true, participants));
     }
 
@@ -91,17 +94,18 @@ public class TemplateController {
 
     // Split Rule Endpoints
     @PostMapping("/{templateId}/split-rules")
-    public ResponseEntity<ApiResponse<SplitRule>> createSplitRule(
+    public ResponseEntity<ApiResponse<SplitRuleResponse>> createSplitRule(
             @PathVariable UUID templateId,
             @RequestParam String name) {
-        SplitRule splitRule = templateService.createSplitRule(templateId, name);
+        SplitRuleResponse splitRule = SplitRuleResponse.from(templateService.createSplitRule(templateId, name));
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(new ApiResponse<>(true, splitRule, "Split rule created successfully"));
     }
 
     @GetMapping("/{templateId}/split-rules")
-    public ResponseEntity<ApiResponse<List<SplitRule>>> getSplitRules(@PathVariable UUID templateId) {
-        List<SplitRule> splitRules = templateService.getSplitRulesByTemplate(templateId);
+    public ResponseEntity<ApiResponse<List<SplitRuleResponse>>> getSplitRules(@PathVariable UUID templateId) {
+        List<SplitRuleResponse> splitRules = templateService.getSplitRulesByTemplate(templateId)
+                .stream().map(SplitRuleResponse::from).toList();
         return ResponseEntity.ok(new ApiResponse<>(true, splitRules));
     }
 
@@ -113,18 +117,20 @@ public class TemplateController {
 
     // Split Rule Allocation Endpoints
     @PostMapping("/split-rules/{splitRuleId}/allocations")
-    public ResponseEntity<ApiResponse<SplitRuleAllocation>> addAllocationToRule(
+    public ResponseEntity<ApiResponse<SplitRuleAllocationResponse>> addAllocationToRule(
             @PathVariable UUID splitRuleId,
             @RequestParam UUID participantId,
             @RequestParam BigDecimal percent) {
-        SplitRuleAllocation allocation = templateService.addAllocationToRule(splitRuleId, participantId, percent);
+        SplitRuleAllocationResponse allocation = SplitRuleAllocationResponse.from(
+                templateService.addAllocationToRule(splitRuleId, participantId, percent));
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(new ApiResponse<>(true, allocation, "Allocation added successfully"));
     }
 
     @GetMapping("/split-rules/{splitRuleId}/allocations")
-    public ResponseEntity<ApiResponse<List<SplitRuleAllocation>>> getAllocationsForRule(@PathVariable UUID splitRuleId) {
-        List<SplitRuleAllocation> allocations = templateService.getAllocationsForRule(splitRuleId);
+    public ResponseEntity<ApiResponse<List<SplitRuleAllocationResponse>>> getAllocationsForRule(@PathVariable UUID splitRuleId) {
+        List<SplitRuleAllocationResponse> allocations = templateService.getAllocationsForRule(splitRuleId)
+                .stream().map(SplitRuleAllocationResponse::from).toList();
         return ResponseEntity.ok(new ApiResponse<>(true, allocations));
     }
 
@@ -136,21 +142,23 @@ public class TemplateController {
 
     // Template Field Endpoints
     @PostMapping("/{templateId}/fields")
-    public ResponseEntity<ApiResponse<TemplateField>> addField(
+    public ResponseEntity<ApiResponse<TemplateFieldResponse>> addField(
             @PathVariable UUID templateId,
             @RequestParam String label,
             @RequestParam FieldType fieldType,
             @RequestParam(required = false) UUID defaultSplitRuleId,
             @RequestParam int displayOrder,
             @RequestParam(required = false) BigDecimal defaultAmount) {
-        TemplateField field = templateService.addField(templateId, label, fieldType, defaultSplitRuleId, displayOrder, defaultAmount);
+        TemplateFieldResponse field = TemplateFieldResponse.from(
+                templateService.addField(templateId, label, fieldType, defaultSplitRuleId, displayOrder, defaultAmount));
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(new ApiResponse<>(true, field, "Field added successfully"));
     }
 
     @GetMapping("/{templateId}/fields")
-    public ResponseEntity<ApiResponse<List<TemplateField>>> getFields(@PathVariable UUID templateId) {
-        List<TemplateField> fields = templateService.getFieldsByTemplate(templateId);
+    public ResponseEntity<ApiResponse<List<TemplateFieldResponse>>> getFields(@PathVariable UUID templateId) {
+        List<TemplateFieldResponse> fields = templateService.getFieldsByTemplate(templateId)
+                .stream().map(TemplateFieldResponse::from).toList();
         return ResponseEntity.ok(new ApiResponse<>(true, fields));
     }
 

@@ -1,8 +1,8 @@
 package com.expensesplitter.controller;
 
 import com.expensesplitter.dto.AddFieldValueRequest;
-import com.expensesplitter.entity.InstanceFieldValue;
-import com.expensesplitter.entity.TemplateInstance;
+import com.expensesplitter.dto.InstanceFieldValueResponse;
+import com.expensesplitter.dto.TemplateInstanceResponse;
 import com.expensesplitter.enums.InstanceStatus;
 import com.expensesplitter.enums.SplitMode;
 import com.expensesplitter.service.ApiResponse;
@@ -28,57 +28,60 @@ public class InstanceController {
 
     // Instance Endpoints
     @PostMapping
-    public ResponseEntity<ApiResponse<TemplateInstance>> createInstance(
+    public ResponseEntity<ApiResponse<TemplateInstanceResponse>> createInstance(
             @RequestParam UUID templateId,
             @RequestParam String name) {
-        TemplateInstance instance = instanceService.createInstance(templateId, name);
+        TemplateInstanceResponse instance = TemplateInstanceResponse.from(instanceService.createInstance(templateId, name));
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(new ApiResponse<>(true, instance, "Instance created successfully"));
     }
 
     @GetMapping("/{instanceId}")
-    public ResponseEntity<ApiResponse<TemplateInstance>> getInstance(@PathVariable UUID instanceId) {
-        TemplateInstance instance = instanceService.getInstanceById(instanceId);
+    public ResponseEntity<ApiResponse<TemplateInstanceResponse>> getInstance(@PathVariable UUID instanceId) {
+        TemplateInstanceResponse instance = TemplateInstanceResponse.from(instanceService.getInstanceById(instanceId));
         return ResponseEntity.ok(new ApiResponse<>(true, instance));
     }
 
     @GetMapping("/template/{templateId}")
-    public ResponseEntity<ApiResponse<List<TemplateInstance>>> getInstancesByTemplate(@PathVariable UUID templateId) {
-        List<TemplateInstance> instances = instanceService.getInstancesByTemplate(templateId);
+    public ResponseEntity<ApiResponse<List<TemplateInstanceResponse>>> getInstancesByTemplate(@PathVariable UUID templateId) {
+        List<TemplateInstanceResponse> instances = instanceService.getInstancesByTemplate(templateId)
+                .stream().map(TemplateInstanceResponse::from).toList();
         return ResponseEntity.ok(new ApiResponse<>(true, instances));
     }
 
     @GetMapping("/template/{templateId}/status/{status}")
-    public ResponseEntity<ApiResponse<List<TemplateInstance>>> getInstancesByTemplateAndStatus(
+    public ResponseEntity<ApiResponse<List<TemplateInstanceResponse>>> getInstancesByTemplateAndStatus(
             @PathVariable UUID templateId,
             @PathVariable InstanceStatus status) {
-        List<TemplateInstance> instances = instanceService.getInstancesByTemplateAndStatus(templateId, status);
+        List<TemplateInstanceResponse> instances = instanceService.getInstancesByTemplateAndStatus(templateId, status)
+                .stream().map(TemplateInstanceResponse::from).toList();
         return ResponseEntity.ok(new ApiResponse<>(true, instances));
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<TemplateInstance>>> getAllInstances() {
-        List<TemplateInstance> instances = instanceService.getAllInstances();
+    public ResponseEntity<ApiResponse<List<TemplateInstanceResponse>>> getAllInstances() {
+        List<TemplateInstanceResponse> instances = instanceService.getAllInstances()
+                .stream().map(TemplateInstanceResponse::from).toList();
         return ResponseEntity.ok(new ApiResponse<>(true, instances));
     }
 
     @PutMapping("/{instanceId}/name")
-    public ResponseEntity<ApiResponse<TemplateInstance>> updateInstanceName(
+    public ResponseEntity<ApiResponse<TemplateInstanceResponse>> updateInstanceName(
             @PathVariable UUID instanceId,
             @RequestParam String name) {
-        TemplateInstance instance = instanceService.updateInstanceName(instanceId, name);
+        TemplateInstanceResponse instance = TemplateInstanceResponse.from(instanceService.updateInstanceName(instanceId, name));
         return ResponseEntity.ok(new ApiResponse<>(true, instance, "Instance name updated successfully"));
     }
 
     @PutMapping("/{instanceId}/settle")
-    public ResponseEntity<ApiResponse<TemplateInstance>> markInstanceAsSettled(@PathVariable UUID instanceId) {
-        TemplateInstance instance = instanceService.markInstanceAsSettled(instanceId);
+    public ResponseEntity<ApiResponse<TemplateInstanceResponse>> markInstanceAsSettled(@PathVariable UUID instanceId) {
+        TemplateInstanceResponse instance = TemplateInstanceResponse.from(instanceService.markInstanceAsSettled(instanceId));
         return ResponseEntity.ok(new ApiResponse<>(true, instance, "Instance marked as settled"));
     }
 
     @PutMapping("/{instanceId}/reopen")
-    public ResponseEntity<ApiResponse<TemplateInstance>> markInstanceAsInProgress(@PathVariable UUID instanceId) {
-        TemplateInstance instance = instanceService.markInstanceAsInProgress(instanceId);
+    public ResponseEntity<ApiResponse<TemplateInstanceResponse>> markInstanceAsInProgress(@PathVariable UUID instanceId) {
+        TemplateInstanceResponse instance = TemplateInstanceResponse.from(instanceService.markInstanceAsInProgress(instanceId));
         return ResponseEntity.ok(new ApiResponse<>(true, instance, "Instance reopened"));
     }
 
@@ -90,44 +93,46 @@ public class InstanceController {
 
     // Field Value Endpoints
     @PostMapping("/{instanceId}/field-values")
-    public ResponseEntity<ApiResponse<InstanceFieldValue>> addFieldValue(
+    public ResponseEntity<ApiResponse<InstanceFieldValueResponse>> addFieldValue(
             @PathVariable UUID instanceId,
             @RequestBody AddFieldValueRequest request) {
-        InstanceFieldValue fieldValue = instanceService.addFieldValue(instanceId, request);
+        InstanceFieldValueResponse fieldValue = InstanceFieldValueResponse.from(instanceService.addFieldValue(instanceId, request));
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(new ApiResponse<>(true, fieldValue, "Field value added successfully"));
     }
 
     @GetMapping("/{instanceId}/field-values")
-    public ResponseEntity<ApiResponse<List<InstanceFieldValue>>> getFieldValuesByInstance(@PathVariable UUID instanceId) {
-        List<InstanceFieldValue> fieldValues = instanceService.getFieldValuesByInstance(instanceId);
+    public ResponseEntity<ApiResponse<List<InstanceFieldValueResponse>>> getFieldValuesByInstance(@PathVariable UUID instanceId) {
+        List<InstanceFieldValueResponse> fieldValues = instanceService.getFieldValuesByInstance(instanceId)
+                .stream().map(InstanceFieldValueResponse::from).toList();
         return ResponseEntity.ok(new ApiResponse<>(true, fieldValues));
     }
 
     @GetMapping("/{instanceId}/field-values/field/{templateFieldId}")
-    public ResponseEntity<ApiResponse<List<InstanceFieldValue>>> getFieldValuesByInstanceAndField(
+    public ResponseEntity<ApiResponse<List<InstanceFieldValueResponse>>> getFieldValuesByInstanceAndField(
             @PathVariable UUID instanceId,
             @PathVariable UUID templateFieldId) {
-        List<InstanceFieldValue> fieldValues = instanceService.getFieldValuesByInstanceAndField(instanceId, templateFieldId);
+        List<InstanceFieldValueResponse> fieldValues = instanceService.getFieldValuesByInstanceAndField(instanceId, templateFieldId)
+                .stream().map(InstanceFieldValueResponse::from).toList();
         return ResponseEntity.ok(new ApiResponse<>(true, fieldValues));
     }
 
     @GetMapping("/field-values/{fieldValueId}")
-    public ResponseEntity<ApiResponse<InstanceFieldValue>> getFieldValue(@PathVariable UUID fieldValueId) {
-        InstanceFieldValue fieldValue = instanceService.getFieldValueById(fieldValueId);
+    public ResponseEntity<ApiResponse<InstanceFieldValueResponse>> getFieldValue(@PathVariable UUID fieldValueId) {
+        InstanceFieldValueResponse fieldValue = InstanceFieldValueResponse.from(instanceService.getFieldValueById(fieldValueId));
         return ResponseEntity.ok(new ApiResponse<>(true, fieldValue));
     }
 
     @PutMapping("/field-values/{fieldValueId}")
-    public ResponseEntity<ApiResponse<InstanceFieldValue>> updateFieldValue(
+    public ResponseEntity<ApiResponse<InstanceFieldValueResponse>> updateFieldValue(
             @PathVariable UUID fieldValueId,
             @RequestParam BigDecimal amount,
             @RequestParam(required = false) String note,
             @RequestParam(required = false) LocalDate entryDate,
             @RequestParam(required = false) SplitMode splitMode,
             @RequestParam(required = false) UUID overrideSplitRuleId) {
-        InstanceFieldValue fieldValue = instanceService.updateFieldValue(
-                fieldValueId, amount, note, entryDate, splitMode, overrideSplitRuleId);
+        InstanceFieldValueResponse fieldValue = InstanceFieldValueResponse.from(
+                instanceService.updateFieldValue(fieldValueId, amount, note, entryDate, splitMode, overrideSplitRuleId));
         return ResponseEntity.ok(new ApiResponse<>(true, fieldValue, "Field value updated successfully"));
     }
 
@@ -138,19 +143,21 @@ public class InstanceController {
     }
 
     @PutMapping("/field-values/{fieldValueId}/amount")
-    public ResponseEntity<ApiResponse<InstanceFieldValue>> updateFieldValueAmount(
+    public ResponseEntity<ApiResponse<InstanceFieldValueResponse>> updateFieldValueAmount(
             @PathVariable UUID fieldValueId,
             @RequestParam BigDecimal amount) {
-        InstanceFieldValue fieldValue = instanceService.updateFieldValueAmount(fieldValueId, amount);
+        InstanceFieldValueResponse fieldValue = InstanceFieldValueResponse.from(
+                instanceService.updateFieldValueAmount(fieldValueId, amount));
         return ResponseEntity.ok(new ApiResponse<>(true, fieldValue, "Field value amount updated successfully"));
     }
 
     @PutMapping("/field-values/{fieldValueId}/split-rule")
-    public ResponseEntity<ApiResponse<InstanceFieldValue>> updateFieldValueSplitRule(
+    public ResponseEntity<ApiResponse<InstanceFieldValueResponse>> updateFieldValueSplitRule(
             @PathVariable UUID fieldValueId,
             @RequestParam UUID splitRuleId) {
-        InstanceFieldValue fieldValue = instanceService.updateFieldValueSplitRule(fieldValueId, splitRuleId);
+        InstanceFieldValueResponse fieldValue = InstanceFieldValueResponse.from(
+                instanceService.updateFieldValueSplitRule(fieldValueId, splitRuleId));
         return ResponseEntity.ok(new ApiResponse<>(true, fieldValue, "Split rule updated successfully"));
     }
-    
+
 }
