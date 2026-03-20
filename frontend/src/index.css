@@ -4,40 +4,45 @@
 
 @layer base {
   :root {
-    /* Dark theme — always active */
-    --background: 240 44% 7%;
-    --foreground: 0 0% 100%;
+    /* Light blue-white page background */
+    --background: 232 100% 97%;
+    --foreground: 222 72% 15%;
 
-    --card: 240 35% 12%;
-    --card-foreground: 0 0% 100%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 72% 15%;
 
-    --popover: 240 35% 12%;
-    --popover-foreground: 0 0% 100%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 72% 15%;
 
-    --primary: 73 100% 50%;
-    --primary-foreground: 240 44% 7%;
+    /* Bright blue primary — #3B6CF6 */
+    --primary: 222 91% 60%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 240 34% 17%;
-    --secondary-foreground: 0 0% 100%;
+    --secondary: 220 20% 95%;
+    --secondary-foreground: 222 72% 15%;
 
-    --muted: 240 34% 17%;
-    --muted-foreground: 240 16% 60%;
+    --muted: 220 20% 95%;
+    --muted-foreground: 220 10% 50%;
 
-    --accent: 73 100% 50%;
-    --accent-foreground: 240 44% 7%;
+    --accent: 222 91% 60%;
+    --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 84% 62%;
+    --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 240 24% 22%;
-    --input: 240 24% 22%;
-    --ring: 73 100% 50%;
+    --border: 220 20% 88%;
+    --input: 220 20% 88%;
+    --ring: 222 91% 60%;
 
-    --radius: 0.625rem;
+    --radius: 0.75rem;
 
     /* Custom surface tokens */
-    --surface: 240 35% 12%;
-    --surface-elevated: 240 34% 17%;
+    --surface: 0 0% 100%;
+    --surface-elevated: 220 40% 97%;
+
+    /* Dark navy navbar */
+    --nav: 222 72% 15%;
+    --nav-foreground: 0 0% 100%;
   }
 }
 
