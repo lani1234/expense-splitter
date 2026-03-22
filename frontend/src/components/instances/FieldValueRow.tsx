@@ -1,9 +1,9 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Pencil, Trash2, Check, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import SplitEditor from "./SplitEditor"
-import { useUpdateFieldValueAmount, useUpdateFieldValueSplitRule, useDeleteFieldValue, useAmountsByFieldValue } from "@/hooks/useFieldValues"
+import { useUpdateFieldValue, useDeleteFieldValue, useAmountsByFieldValue } from "@/hooks/useFieldValues"
 import { useParticipants, useAllocations } from "@/hooks/useTemplates"
 import type { InstanceFieldValue, SplitMode } from "@/types"
 import { useToast } from "@/hooks/use-toast"
@@ -26,8 +26,7 @@ export default function FieldValueRow({
   defaultSplitRuleId,
 }: Props) {
   const { toast } = useToast()
-  const updateAmount = useUpdateFieldValueAmount(instanceId)
-  const updateSplitRule = useUpdateFieldValueSplitRule(instanceId)
+  const updateFieldValue = useUpdateFieldValue(instanceId)
   const deleteFieldValue = useDeleteFieldValue(instanceId)
 
   const { data: participantEntryAmounts = [] } = useAmountsByFieldValue(fieldValue.id)
@@ -67,9 +66,23 @@ export default function FieldValueRow({
   const [amount, setAmount] = useState(String(fieldValue.amount))
   const [note, setNote] = useState(fieldValue.note ?? "")
   const [splitMode, setSplitMode] = useState<SplitMode>(fieldValue.splitMode)
-  const [splitRuleId, setSplitRuleId] = useState(fieldValue.overrideSplitRuleId ?? "")
   const [fixedAmounts, setFixedAmounts] = useState<Record<string, number>>({})
+  const [customPercentages, setCustomPercentages] = useState<Record<string, number>>({})
   const [saving, setSaving] = useState(false)
+
+  // When entering edit mode for a FIELD_VALUE_CUSTOM_PERCENT entry, reverse-engineer
+  // percentages from the stored amounts so the inputs are pre-populated.
+  useEffect(() => {
+    if (editing && fieldValue.splitMode === "FIELD_VALUE_CUSTOM_PERCENT" && fieldValue.amount > 0) {
+      const percs = Object.fromEntries(
+        participantEntryAmounts.map((pea) => [
+          pea.templateParticipantId,
+          Math.round((pea.amount / fieldValue.amount) * 100),
+        ])
+      )
+      setCustomPercentages(percs)
+    }
+  }, [editing])
 
   const handleSave = async () => {
     setSaving(true)
@@ -77,7 +90,6 @@ export default function FieldValueRow({
       const newAmount = parseFloat(amount)
       if (isNaN(newAmount) || newAmount < 0) {
         toast({ title: "Invalid amount", variant: "destructive" })
-        setSaving(false)
         return
       }
 
@@ -85,23 +97,44 @@ export default function FieldValueRow({
         const fixedTotal = Object.values(fixedAmounts).reduce((s, v) => s + v, 0)
         if (Math.abs(fixedTotal - newAmount) > 0.01) {
           toast({ title: "Fixed amounts must sum to total", variant: "destructive" })
-          setSaving(false)
           return
         }
       }
 
-      if (newAmount !== fieldValue.amount) {
-        await updateAmount.mutateAsync({ fieldValueId: fieldValue.id, amount: newAmount })
+      if (splitMode === "FIELD_VALUE_CUSTOM_PERCENT") {
+        const percentTotal = Object.values(customPercentages).reduce((s, v) => s + v, 0)
+        if (Math.abs(percentTotal - 100) > 0.5) {
+          toast({ title: "Percentages must sum to 100%", variant: "destructive" })
+          return
+        }
       }
 
-      if (
-        splitMode === "FIELD_VALUE_CUSTOM_PERCENT" &&
-        splitRuleId &&
-        splitRuleId !== fieldValue.overrideSplitRuleId
-      ) {
-        await updateSplitRule.mutateAsync({ fieldValueId: fieldValue.id, splitRuleId })
+      let participantAmounts: Record<string, number> | undefined
+      if (splitMode === "FIELD_VALUE_FIXED_AMOUNTS") {
+        participantAmounts = fixedAmounts
+      } else if (splitMode === "FIELD_VALUE_CUSTOM_PERCENT") {
+        // Convert percentages to amounts; assign rounding remainder to the last participant
+        const ids = Object.keys(customPercentages)
+        participantAmounts = {}
+        let remaining = newAmount
+        ids.forEach((id, i) => {
+          if (i === ids.length - 1) {
+            participantAmounts![id] = Math.round(remaining * 100) / 100
+          } else {
+            const amt = Math.round((customPercentages[id] / 100) * newAmount * 100) / 100
+            participantAmounts![id] = amt
+            remaining -= amt
+          }
+        })
       }
 
+      await updateFieldValue.mutateAsync({
+        fieldValueId: fieldValue.id,
+        amount: newAmount,
+        note: note.trim() || undefined,
+        splitMode,
+        participantAmounts,
+      })
       setEditing(false)
     } catch (e) {
       toast({
@@ -123,8 +156,8 @@ export default function FieldValueRow({
     setAmount(String(fieldValue.amount))
     setNote(fieldValue.note ?? "")
     setSplitMode(fieldValue.splitMode)
-    setSplitRuleId(fieldValue.overrideSplitRuleId ?? "")
     setFixedAmounts({})
+    setCustomPercentages({})
     setEditing(false)
   }
 
@@ -160,15 +193,14 @@ export default function FieldValueRow({
 
         <SplitEditor
           templateId={templateId}
+          defaultSplitRuleId={defaultSplitRuleId}
           currentSplitMode={splitMode}
-          currentSplitRuleId={splitRuleId}
           totalAmount={parseFloat(amount) || 0}
-          onSplitModeChange={(mode, ruleId) => {
-            setSplitMode(mode)
-            setSplitRuleId(ruleId ?? "")
-          }}
+          onSplitModeChange={setSplitMode}
           onFixedAmountsChange={setFixedAmounts}
           fixedAmounts={fixedAmounts}
+          customPercentages={customPercentages}
+          onCustomPercentagesChange={setCustomPercentages}
         />
 
         <div className="flex justify-end gap-2">

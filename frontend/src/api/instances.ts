@@ -4,6 +4,7 @@ import type {
   InstanceStatus,
   InstanceFieldValue,
   AddFieldValueRequest,
+  SplitMode,
 } from "@/types"
 
 // Instances
@@ -74,6 +75,27 @@ export const updateFieldValueSplitRule = (fieldValueId: string, splitRuleId: str
       null,
       { params: { splitRuleId } }
     )
+    .then((r) => r.data)
+
+export const updateFieldValue = (
+  fieldValueId: string,
+  params: {
+    amount: number
+    note?: string
+    splitMode: SplitMode
+    overrideSplitRuleId?: string
+    participantAmounts?: Record<string, number>
+  }
+) =>
+  client
+    .put<InstanceFieldValue>(`/instances/field-values/${fieldValueId}`, params.participantAmounts ?? null, {
+      params: {
+        amount: params.amount,
+        note: params.note,
+        splitMode: params.splitMode,
+        overrideSplitRuleId: params.overrideSplitRuleId,
+      },
+    })
     .then((r) => r.data)
 
 export const deleteFieldValue = (fieldValueId: string) =>

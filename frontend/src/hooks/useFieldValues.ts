@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import * as instanceApi from "@/api/instances"
 import * as amountsApi from "@/api/participantAmounts"
-import type { AddFieldValueRequest } from "@/types"
+import type { AddFieldValueRequest, SplitMode } from "@/types"
 import { INSTANCE_KEYS } from "./useInstances"
 
 export const TOTALS_KEY = (instanceId: string, participantId: string) =>
@@ -59,6 +59,25 @@ export function useUpdateFieldValueSplitRule(instanceId: string) {
     }) => instanceApi.updateFieldValueSplitRule(fieldValueId, splitRuleId),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: INSTANCE_KEYS.fieldValues(instanceId) })
+      qc.invalidateQueries({ queryKey: ["participant-totals", instanceId] })
+    },
+  })
+}
+
+export function useUpdateFieldValue(instanceId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (params: {
+      fieldValueId: string
+      amount: number
+      note?: string
+      splitMode: SplitMode
+      overrideSplitRuleId?: string
+      participantAmounts?: Record<string, number>
+    }) => instanceApi.updateFieldValue(params.fieldValueId, params),
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: INSTANCE_KEYS.fieldValues(instanceId) })
+      qc.invalidateQueries({ queryKey: ["participant-entry-amounts", "field-value", vars.fieldValueId] })
       qc.invalidateQueries({ queryKey: ["participant-totals", instanceId] })
     },
   })

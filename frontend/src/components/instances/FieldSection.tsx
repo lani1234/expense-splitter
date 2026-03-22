@@ -30,8 +30,8 @@ export default function FieldSection({
   const [newAmount, setNewAmount] = useState("")
   const [newNote, setNewNote] = useState("")
   const [newSplitMode, setNewSplitMode] = useState<SplitMode>("TEMPLATE_FIELD_PERCENT_SPLIT")
-  const [newSplitRuleId, setNewSplitRuleId] = useState("")
   const [newFixedAmounts, setNewFixedAmounts] = useState<Record<string, number>>({})
+  const [newCustomPercentages, setNewCustomPercentages] = useState<Record<string, number>>({})
   const [adding, setAdding] = useState(false)
 
   const isMultiple = field.fieldType === "MULTIPLE"
@@ -51,6 +51,32 @@ export default function FieldSection({
       }
     }
 
+    if (newSplitMode === "FIELD_VALUE_CUSTOM_PERCENT") {
+      const percentTotal = Object.values(newCustomPercentages).reduce((s, v) => s + v, 0)
+      if (Math.abs(percentTotal - 100) > 0.5) {
+        toast({ title: "Percentages must sum to 100%", variant: "destructive" })
+        return
+      }
+    }
+
+    let participantAmounts: Record<string, number> | undefined
+    if (newSplitMode === "FIELD_VALUE_FIXED_AMOUNTS") {
+      participantAmounts = newFixedAmounts
+    } else if (newSplitMode === "FIELD_VALUE_CUSTOM_PERCENT") {
+      const ids = Object.keys(newCustomPercentages)
+      participantAmounts = {}
+      let remaining = amount
+      ids.forEach((id, i) => {
+        if (i === ids.length - 1) {
+          participantAmounts![id] = Math.round(remaining * 100) / 100
+        } else {
+          const amt = Math.round((newCustomPercentages[id] / 100) * amount * 100) / 100
+          participantAmounts![id] = amt
+          remaining -= amt
+        }
+      })
+    }
+
     setAdding(true)
     try {
       await addFieldValue.mutateAsync({
@@ -58,17 +84,14 @@ export default function FieldSection({
         amount,
         note: newNote.trim() || undefined,
         splitMode: newSplitMode,
-        overrideSplitRuleId:
-          newSplitMode === "FIELD_VALUE_CUSTOM_PERCENT" ? newSplitRuleId : undefined,
-        participantAmounts:
-          newSplitMode === "FIELD_VALUE_FIXED_AMOUNTS" ? newFixedAmounts : undefined,
+        participantAmounts,
       })
       setShowAdd(false)
       setNewAmount("")
       setNewNote("")
       setNewSplitMode("TEMPLATE_FIELD_PERCENT_SPLIT")
-      setNewSplitRuleId("")
       setNewFixedAmounts({})
+      setNewCustomPercentages({})
     } catch (e) {
       toast({
         title: "Failed to add entry",
@@ -142,15 +165,14 @@ export default function FieldSection({
                 </div>
                 <SplitEditor
                   templateId={templateId}
+                  defaultSplitRuleId={field.defaultSplitRuleId}
                   currentSplitMode={newSplitMode}
-                  currentSplitRuleId={newSplitRuleId}
                   totalAmount={parseFloat(newAmount) || 0}
-                  onSplitModeChange={(mode, ruleId) => {
-                    setNewSplitMode(mode)
-                    setNewSplitRuleId(ruleId ?? "")
-                  }}
+                  onSplitModeChange={setNewSplitMode}
                   onFixedAmountsChange={setNewFixedAmounts}
                   fixedAmounts={newFixedAmounts}
+                  customPercentages={newCustomPercentages}
+                  onCustomPercentagesChange={setNewCustomPercentages}
                 />
                 <div className="flex gap-2 justify-end">
                   <Button variant="ghost" size="sm" onClick={() => setShowAdd(false)} className="h-7">

@@ -82,10 +82,10 @@ public class TemplateService {
     public void deleteTemplate(UUID templateId) {
         // Delete instances and their field values/participant amounts
         instanceRepository.findByTemplateId(templateId).forEach(instance -> {
-            fieldValueRepository.findByInstanceId(instance.getId()).forEach(fv -> {
+            fieldValueRepository.findByInstanceIdOrderByCreatedAtAsc(instance.getId()).forEach(fv -> {
                 participantEntryAmountRepository.deleteByInstanceFieldValueId(fv.getId());
             });
-            fieldValueRepository.deleteAll(fieldValueRepository.findByInstanceId(instance.getId()));
+            fieldValueRepository.deleteAll(fieldValueRepository.findByInstanceIdOrderByCreatedAtAsc(instance.getId()));
         });
         instanceRepository.deleteAll(instanceRepository.findByTemplateId(templateId));
 
