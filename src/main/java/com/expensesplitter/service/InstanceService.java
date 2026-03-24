@@ -141,11 +141,11 @@ public class InstanceService {
         InstanceFieldValue savedInstanceFieldValue = fieldValueRepository.save(fieldValue);
 
         // Handle different split modes
-        if (fieldValue.getSplitMode() == SplitMode.FIELD_VALUE_FIXED_AMOUNTS) {
-            // For fixed amounts, create ParticipantEntryAmount records directly
+        if (request.getParticipantAmounts() != null && !request.getParticipantAmounts().isEmpty()) {
+            // Direct allocation provided (fixed amounts or custom percentage split)
             createFixedAmountAllocations(savedInstanceFieldValue, request.getParticipantAmounts());
         } else {
-            // For percentage-based splits, calculate allocations
+            // Calculate allocations from split rule
             calculateAndCreateParticipantEntryAmounts(savedInstanceFieldValue);
         }
 
@@ -183,11 +183,11 @@ public class InstanceService {
     }
 
     public List<InstanceFieldValue> getFieldValuesByInstance(UUID instanceId) {
-        return fieldValueRepository.findByInstanceId(instanceId);
+        return fieldValueRepository.findByInstanceIdOrderByCreatedAtAsc(instanceId);
     }
 
     public List<InstanceFieldValue> getFieldValuesByInstanceAndField(UUID instanceId, UUID templateFieldId) {
-        return fieldValueRepository.findByInstanceIdAndTemplateFieldId(instanceId, templateFieldId);
+        return fieldValueRepository.findByInstanceIdAndTemplateFieldIdOrderByCreatedAtAsc(instanceId, templateFieldId);
     }
 
     public InstanceFieldValue getFieldValueById(UUID fieldValueId) {
@@ -198,19 +198,33 @@ public class InstanceService {
     public InstanceFieldValue updateFieldValue(UUID fieldValueId, BigDecimal amount, String note,
                                                java.time.LocalDate entryDate,
                                                com.expensesplitter.enums.SplitMode splitMode,
-                                               UUID overrideSplitRuleId) {
+                                               UUID overrideSplitRuleId,
+                                               Map<UUID, BigDecimal> participantAmounts) {
         InstanceFieldValue fieldValue = getFieldValueById(fieldValueId);
         fieldValue.setAmount(amount);
         fieldValue.setNote(note);
         fieldValue.setEntryDate(entryDate);
         fieldValue.setSplitMode(splitMode);
 
-        if (overrideSplitRuleId != null) {
-            SplitRule overrideRule = templateService.getSplitRuleById(overrideSplitRuleId);
-            fieldValue.setOverrideSplitRule(overrideRule);
+        // Clear any previously stored override rule (no longer used for editing)
+        fieldValue.setOverrideSplitRule(null);
+
+        InstanceFieldValue savedFieldValue = fieldValueRepository.save(fieldValue);
+
+        // Delete existing allocations and recreate based on new split mode
+        participantEntryAmountRepository.deleteByInstanceFieldValueId(fieldValueId);
+
+        if (amount.compareTo(BigDecimal.ZERO) > 0) {
+            if (participantAmounts != null && !participantAmounts.isEmpty()) {
+                // Direct allocation provided (fixed amounts or custom percentage split)
+                createFixedAmountAllocations(savedFieldValue, participantAmounts);
+            } else {
+                // Calculate allocations from split rule
+                calculateAndCreateParticipantEntryAmounts(savedFieldValue);
+            }
         }
 
-        return fieldValueRepository.save(fieldValue);
+        return savedFieldValue;
     }
 
     public void deleteFieldValue(UUID fieldValueId) {

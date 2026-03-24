@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
@@ -47,10 +48,16 @@ public class InstanceFieldValue {
     @JoinColumn(name = "override_split_rule_id")
     private SplitRule overrideSplitRule;
 
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
+
     @PrePersist
     protected void onCreate() {
         if (this.splitMode == null) {
             this.splitMode = SplitMode.TEMPLATE_FIELD_PERCENT_SPLIT;
+        }
+        if (this.createdAt == null) {
+            this.createdAt = LocalDateTime.now();
         }
     }
 }

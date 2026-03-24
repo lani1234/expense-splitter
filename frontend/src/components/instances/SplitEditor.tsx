@@ -1,100 +1,167 @@
-import { useState } from "react"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+import { useState, useEffect, useMemo } from "react"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { useSplitRules, useParticipants } from "@/hooks/useTemplates"
+import { useParticipants, useAllocations } from "@/hooks/useTemplates"
 import type { SplitMode } from "@/types"
-
-const SPLIT_MODE_OPTIONS = [
-  { value: "TEMPLATE_FIELD_PERCENT_SPLIT", label: "Template Default" },
-  { value: "FIELD_VALUE_CUSTOM_PERCENT", label: "Custom Split Rule" },
-  { value: "FIELD_VALUE_FIXED_AMOUNTS", label: "Fixed Amounts" },
-] as const
 
 interface Props {
   templateId: string
+  defaultSplitRuleId?: string
   currentSplitMode: SplitMode
-  currentSplitRuleId?: string
   totalAmount: number
-  onSplitModeChange: (mode: SplitMode, splitRuleId?: string) => void
+  onSplitModeChange: (mode: SplitMode) => void
   onFixedAmountsChange: (amounts: Record<string, number>) => void
   fixedAmounts: Record<string, number>
+  customPercentages: Record<string, number>
+  onCustomPercentagesChange: (percentages: Record<string, number>) => void
+}
+
+function RadioDot({ selected }: { selected: boolean }) {
+  return selected ? (
+    <div className="w-3.5 h-3.5 rounded-full border-2 border-primary flex items-center justify-center shrink-0">
+      <div className="w-1.5 h-1.5 rounded-full bg-primary" />
+    </div>
+  ) : (
+    <div className="w-3.5 h-3.5 rounded-full border-2 border-muted-foreground shrink-0" />
+  )
 }
 
 export default function SplitEditor({
   templateId,
+  defaultSplitRuleId,
   currentSplitMode,
-  currentSplitRuleId,
   totalAmount,
   onSplitModeChange,
   onFixedAmountsChange,
   fixedAmounts,
+  customPercentages,
+  onCustomPercentagesChange,
 }: Props) {
-  const { data: splitRules = [] } = useSplitRules(templateId)
   const { data: participants = [] } = useParticipants(templateId)
+  const { data: defaultAllocations = [] } = useAllocations(defaultSplitRuleId ?? "")
 
-  const [selectedRuleId, setSelectedRuleId] = useState(currentSplitRuleId ?? "")
+  const templateDefaultLabel = useMemo(() => {
+    if (!defaultAllocations.length) return "Template Default"
+    const pcts = participants
+      .map((p) => defaultAllocations.find((a) => a.templateParticipantId === p.id))
+      .filter(Boolean)
+      .map((a) => `${Math.round(a!.percent)}%`)
+    return pcts.length ? `Template Default (${pcts.join(" / ")})` : "Template Default"
+  }, [defaultAllocations, participants])
 
-  const fixedTotal = Object.values(fixedAmounts).reduce((s, v) => s + (v || 0), 0)
-  const remaining = totalAmount - fixedTotal
+  const [manuallySet, setManuallySet] = useState<Set<string>>(new Set())
 
-  const handleModeChange = (mode: SplitMode) => {
-    if (mode === "FIELD_VALUE_CUSTOM_PERCENT") {
-      onSplitModeChange(mode, selectedRuleId || undefined)
-    } else {
-      onSplitModeChange(mode, undefined)
-    }
+  useEffect(() => {
+    setManuallySet(new Set())
+  }, [currentSplitMode])
+
+  function autoDistribute(
+    amounts: Record<string, number>,
+    changedId: string,
+    newValue: number,
+    nextManuallySet: Set<string>,
+    total: number,
+    decimals: number
+  ): Record<string, number> {
+    const updated = { ...amounts, [changedId]: newValue }
+    const targets = participants.filter((p) => !nextManuallySet.has(p.id))
+    if (targets.length === 0) return updated
+    const manualSum = participants
+      .filter((p) => nextManuallySet.has(p.id))
+      .reduce((s, p) => s + (updated[p.id] || 0), 0)
+    const remaining = total - manualSum
+    if (remaining < 0) return updated
+    const factor = Math.pow(10, decimals)
+    const each = Math.round((remaining / targets.length) * factor) / factor
+    targets.forEach((p, i) => {
+      if (i === targets.length - 1) {
+        const soFar = targets.slice(0, -1).length * each
+        updated[p.id] = Math.max(0, Math.round((remaining - soFar) * factor) / factor)
+      } else {
+        updated[p.id] = each
+      }
+    })
+    return updated
   }
 
-  const handleRuleChange = (ruleId: string) => {
-    setSelectedRuleId(ruleId)
-    onSplitModeChange("FIELD_VALUE_CUSTOM_PERCENT", ruleId)
+  const handleFixedAmountChange = (id: string, raw: string) => {
+    const value = parseFloat(raw) || 0
+    const next = new Set([...manuallySet, id])
+    setManuallySet(next)
+    onFixedAmountsChange(autoDistribute(fixedAmounts, id, value, next, totalAmount, 2))
+  }
+
+  const handlePercentChange = (id: string, raw: string) => {
+    const value = parseFloat(raw) || 0
+    const next = new Set([...manuallySet, id])
+    setManuallySet(next)
+    onCustomPercentagesChange(autoDistribute(customPercentages, id, value, next, 100, 0))
   }
 
   return (
-    <div className="space-y-3">
-      <div className="space-y-1.5">
-        <Label className="text-xs">Split Mode</Label>
-        <Select value={currentSplitMode} onValueChange={(v) => handleModeChange(v as SplitMode)}>
-          <SelectTrigger className="bg-background border-border h-8 text-sm">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent className="bg-surface border-border">
-            {SPLIT_MODE_OPTIONS.map((o) => (
-              <SelectItem key={o.value} value={o.value}>
-                {o.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+    <div className="space-y-1">
+      {/* Template Default */}
+      <button
+        type="button"
+        onClick={() => onSplitModeChange("TEMPLATE_FIELD_PERCENT_SPLIT")}
+        className={`flex items-center gap-2 w-full rounded-md px-2 py-1.5 text-left transition-colors ${
+          currentSplitMode === "TEMPLATE_FIELD_PERCENT_SPLIT"
+            ? "bg-primary/10 text-foreground"
+            : "text-muted-foreground hover:text-foreground hover:bg-surface-elevated"
+        }`}
+      >
+        <RadioDot selected={currentSplitMode === "TEMPLATE_FIELD_PERCENT_SPLIT"} />
+        <span className="text-sm">{templateDefaultLabel}</span>
+      </button>
 
+      {/* Custom Percentage Split */}
+      <button
+        type="button"
+        onClick={() => onSplitModeChange("FIELD_VALUE_CUSTOM_PERCENT")}
+        className={`flex items-center gap-2 w-full rounded-md px-2 py-1.5 text-left transition-colors ${
+          currentSplitMode === "FIELD_VALUE_CUSTOM_PERCENT"
+            ? "bg-primary/10 text-foreground"
+            : "text-muted-foreground hover:text-foreground hover:bg-surface-elevated"
+        }`}
+      >
+        <RadioDot selected={currentSplitMode === "FIELD_VALUE_CUSTOM_PERCENT"} />
+        <span className="text-sm">Custom Percentage Split</span>
+      </button>
       {currentSplitMode === "FIELD_VALUE_CUSTOM_PERCENT" && (
-        <div className="space-y-1.5">
-          <Label className="text-xs">Split Rule</Label>
-          <Select value={selectedRuleId} onValueChange={handleRuleChange}>
-            <SelectTrigger className="bg-background border-border h-8 text-sm">
-              <SelectValue placeholder="Select rule..." />
-            </SelectTrigger>
-            <SelectContent className="bg-surface border-border">
-              {splitRules.map((r) => (
-                <SelectItem key={r.id} value={r.id}>
-                  {r.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        <div className="pl-6 pt-1 space-y-2">
+          {participants.map((p) => (
+            <div key={p.id} className="flex items-center gap-2">
+              <span className="w-20 text-xs text-muted-foreground">{p.name}</span>
+              <Input
+                type="number"
+                min="0"
+                max="100"
+                step="1"
+                placeholder="0"
+                value={customPercentages[p.id] || ""}
+                onChange={(e) => handlePercentChange(p.id, e.target.value)}
+                className="w-20 bg-background border-border h-7 text-sm"
+              />
+              <span className="text-xs text-muted-foreground">%</span>
+            </div>
+          ))}
         </div>
       )}
 
+      {/* Fixed Amounts */}
+      <button
+        type="button"
+        onClick={() => onSplitModeChange("FIELD_VALUE_FIXED_AMOUNTS")}
+        className={`flex items-center gap-2 w-full rounded-md px-2 py-1.5 text-left transition-colors ${
+          currentSplitMode === "FIELD_VALUE_FIXED_AMOUNTS"
+            ? "bg-primary/10 text-foreground"
+            : "text-muted-foreground hover:text-foreground hover:bg-surface-elevated"
+        }`}
+      >
+        <RadioDot selected={currentSplitMode === "FIELD_VALUE_FIXED_AMOUNTS"} />
+        <span className="text-sm">Fixed Amounts</span>
+      </button>
       {currentSplitMode === "FIELD_VALUE_FIXED_AMOUNTS" && (
-        <div className="space-y-2">
+        <div className="pl-6 pt-1 space-y-2">
           {participants.map((p) => (
             <div key={p.id} className="flex items-center gap-2">
               <span className="w-20 text-xs text-muted-foreground">{p.name}</span>
@@ -104,20 +171,12 @@ export default function SplitEditor({
                 min="0"
                 step="0.01"
                 placeholder="0.00"
-                value={fixedAmounts[p.id] ?? ""}
-                onChange={(e) =>
-                  onFixedAmountsChange({
-                    ...fixedAmounts,
-                    [p.id]: parseFloat(e.target.value) || 0,
-                  })
-                }
+                value={fixedAmounts[p.id] || ""}
+                onChange={(e) => handleFixedAmountChange(p.id, e.target.value)}
                 className="w-24 bg-background border-border h-7 text-sm"
               />
             </div>
           ))}
-          <p className={`text-xs ${Math.abs(remaining) < 0.01 ? "text-primary" : "text-destructive"}`}>
-            Remaining: ${remaining.toFixed(2)}
-          </p>
         </div>
       )}
     </div>

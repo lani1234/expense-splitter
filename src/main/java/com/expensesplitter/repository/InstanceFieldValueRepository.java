@@ -9,6 +9,6 @@ import java.util.UUID;
 
 @Repository
 public interface InstanceFieldValueRepository extends JpaRepository<InstanceFieldValue, UUID> {
-    List<InstanceFieldValue> findByInstanceId(UUID instanceId);
-    List<InstanceFieldValue> findByInstanceIdAndTemplateFieldId(UUID instanceId, UUID templateFieldId);
+    List<InstanceFieldValue> findByInstanceIdOrderByCreatedAtAsc(UUID instanceId);
+    List<InstanceFieldValue> findByInstanceIdAndTemplateFieldIdOrderByCreatedAtAsc(UUID instanceId, UUID templateFieldId);
 }
