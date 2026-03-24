@@ -25,17 +25,22 @@ const client = axios.create({
 
 Set `VITE_API_URL` in Vercel's environment variables to the Railway backend URL (e.g. `https://weeven-backend.up.railway.app/api`). In local dev it falls back to `/api` via the existing Vite proxy — no local `.env` file needed.
 
+**Also required:** create `frontend/src/vite-env.d.ts` so TypeScript recognizes `import.meta.env`:
+```ts
+/// <reference types="vite/client" />
+```
+
+Without this file, the Vercel build will fail with `Property 'env' does not exist on type 'ImportMeta'`.
+
 ### 2. Backend — environment variable support for DB credentials
 
 `application.properties` currently has hardcoded local DB values. Replace with environment variable placeholders so Railway can inject them:
 
 ```properties
-spring.datasource.url=${DATABASE_URL}
-spring.datasource.username=${DATABASE_USERNAME}
-spring.datasource.password=${DATABASE_PASSWORD}
+spring.datasource.url=${DATABASE_URL:jdbc:postgresql://localhost:5432/expense_splitter}
+spring.datasource.username=${DATABASE_USERNAME:localuser}
+spring.datasource.password=${DATABASE_PASSWORD:}
 ```
-
-Railway and Supabase both provide these as environment variables in their dashboards.
 
 ### 3. Backend — CORS configuration
 
@@ -71,35 +76,43 @@ Set `CORS_ALLOWED_ORIGINS=https://weeven.vercel.app` in Railway environment vari
 ### Step 1 — Supabase (Database)
 
 1. Create account at supabase.com → New project
-2. Note the connection string: **Settings → Database → Connection string (URI mode)**
-   - Format: `postgresql://postgres:[password]@[host]:5432/postgres`
-3. No schema setup needed — Flyway migrations run automatically on first backend startup
+2. When creating the project, **uncheck both** "Enable Data API" and "Enable automatic RLS" — this project uses Spring Boot as the backend, not supabase-js, so these features are unused and RLS would block JDBC connections
+3. Get the **connection pooler** URL: **Settings → Database → Connection pooling**
+   - Use the pooler, not the direct connection — new Supabase projects use IPv6 for direct connections, which Railway does not support
+   - Pooler host format: `aws-0-[region].pooler.supabase.com`, port `6543`
+4. Note your project ref (the string in your Supabase URL, e.g. `cipnktpytthrcvbnruaj`)
+5. No schema setup needed — Flyway migrations run automatically on first backend startup
 
 ### Step 2 — Railway (Backend)
 
 1. Create account at railway.app → New project → Deploy from GitHub repo
 2. Select the repository; set **Root Directory** to `/` (backend is at repo root)
 3. Railway detects Maven automatically and runs `mvn package` + runs the JAR
-4. Add environment variables in Railway dashboard:
+4. Add environment variables in Railway dashboard (use `SPRING_DATASOURCE_*` names — Spring Boot reads these natively without needing `application.properties` substitution):
    ```
-   DATABASE_URL=jdbc:postgresql://[supabase-host]:5432/postgres
-   DATABASE_USERNAME=postgres
-   DATABASE_PASSWORD=[supabase-db-password]
+   SPRING_DATASOURCE_URL=jdbc:postgresql://[pooler-host]:6543/postgres?sslmode=require
+   SPRING_DATASOURCE_USERNAME=postgres.[project-ref]
+   SPRING_DATASOURCE_PASSWORD=[supabase-db-password]
    CORS_ALLOWED_ORIGINS=https://[your-vercel-url].vercel.app
    ```
-5. Deploy → check logs for Flyway migration output confirming tables were created
-6. Note the Railway public URL (e.g. `https://weeven-backend.up.railway.app`)
+   - `SPRING_DATASOURCE_USERNAME` must include the project ref (e.g. `postgres.cipnktpytthrcvbnruaj`) — the pooler requires this format
+   - `SPRING_DATASOURCE_URL` must use `jdbc:postgresql://` (not `postgresql://`) and include `?sslmode=require`
+5. Deploy → the public domain is generated after first deploy under **Settings → Networking → Public Networking**
+6. Check logs for Flyway migration output confirming tables were created
+7. Note the Railway public URL (e.g. `https://weeven-backend.up.railway.app`)
+8. Update `CORS_ALLOWED_ORIGINS` with your Vercel URL once you have it (Step 3)
 
 ### Step 3 — Vercel (Frontend)
 
 1. Create account at vercel.com → New project → Import GitHub repo
 2. Set **Root Directory** to `frontend`
 3. Vercel auto-detects Vite; build command `npm run build`, output dir `dist`
-4. Add environment variable:
+4. Add environment variable (no trailing spaces — Vite bakes this into the bundle at build time):
    ```
    VITE_API_URL=https://[your-railway-url].up.railway.app/api
    ```
 5. Deploy → visit the Vercel URL to confirm the app loads and API calls succeed
+6. Copy the Vercel URL and set it as `CORS_ALLOWED_ORIGINS` in Railway, then redeploy Railway
 
 ---
 
