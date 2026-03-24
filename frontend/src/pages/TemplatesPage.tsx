@@ -55,6 +55,7 @@ export default function TemplatesPage() {
       <TemplateWizard open={wizardOpen} onClose={() => setWizardOpen(false)} />
 
       <NewInstanceDialog
+        key={newInstanceTemplateId ?? ""}
         open={!!newInstanceTemplateId}
         defaultTemplateId={newInstanceTemplateId ?? undefined}
         onClose={() => setNewInstanceTemplateId(null)}

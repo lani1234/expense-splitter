@@ -57,18 +57,24 @@ export default function NewInstanceDialog({ open, onClose, defaultTemplateId }: 
         <div className="space-y-4 py-2">
           <div className="space-y-2">
             <Label>Template</Label>
-            <Select value={templateId} onValueChange={setTemplateId}>
-              <SelectTrigger className="bg-surface-elevated border-border">
-                <SelectValue placeholder="Select template..." />
-              </SelectTrigger>
-              <SelectContent className="bg-surface border-border">
-                {templates.map((t) => (
-                  <SelectItem key={t.id} value={t.id}>
-                    {t.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {defaultTemplateId ? (
+              <p className="text-base font-semibold text-foreground px-1">
+                {templates.find((t) => t.id === defaultTemplateId)?.name}
+              </p>
+            ) : (
+              <Select value={templateId} onValueChange={setTemplateId}>
+                <SelectTrigger className="bg-surface-elevated border-border">
+                  <SelectValue placeholder="Select template..." />
+                </SelectTrigger>
+                <SelectContent className="bg-surface border-border">
+                  {templates.map((t) => (
+                    <SelectItem key={t.id} value={t.id}>
+                      {t.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
           </div>
           <div className="space-y-2">
             <Label>Name</Label>
