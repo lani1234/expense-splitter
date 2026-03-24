@@ -12,4 +12,5 @@ public interface ParticipantEntryAmountRepository extends JpaRepository<Particip
     List<ParticipantEntryAmount> findByInstanceFieldValueId(UUID instanceFieldValueId);
     List<ParticipantEntryAmount> findByTemplateParticipantId(UUID templateParticipantId);
     void deleteByInstanceFieldValueId(UUID instanceFieldValueId);
+    void deleteByInstanceFieldValueInstanceId(UUID instanceId);
 }

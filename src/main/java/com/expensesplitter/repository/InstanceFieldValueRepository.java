@@ -11,4 +11,5 @@ import java.util.UUID;
 public interface InstanceFieldValueRepository extends JpaRepository<InstanceFieldValue, UUID> {
     List<InstanceFieldValue> findByInstanceIdOrderByCreatedAtAsc(UUID instanceId);
     List<InstanceFieldValue> findByInstanceIdAndTemplateFieldIdOrderByCreatedAtAsc(UUID instanceId, UUID templateFieldId);
+    void deleteByInstanceId(UUID instanceId);
 }

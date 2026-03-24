@@ -1,9 +1,11 @@
 import { useNavigate } from "react-router-dom"
-import { Clock, CheckCircle2 } from "lucide-react"
+import { Clock, CheckCircle2, Trash2 } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import { useParticipants } from "@/hooks/useTemplates"
 import { useParticipantTotal } from "@/hooks/useFieldValues"
+import { useDeleteInstance } from "@/hooks/useInstances"
 import type { TemplateInstance } from "@/types"
 
 interface ParticipantTotalProps {
@@ -29,7 +31,15 @@ interface Props {
 export default function InstanceCard({ instance, templateName }: Props) {
   const navigate = useNavigate()
   const { data: participants = [] } = useParticipants(instance.templateId)
+  const { mutate: deleteInstance } = useDeleteInstance()
   const isSettled = instance.status === "SETTLED"
+
+  function handleDelete(e: React.MouseEvent) {
+    e.stopPropagation()
+    if (confirm(`Delete "${instance.name}"? This cannot be undone.`)) {
+      deleteInstance(instance.id)
+    }
+  }
 
   const formattedDate = new Date(instance.createdAt).toLocaleDateString("en-US", {
     month: "short",
@@ -50,6 +60,7 @@ export default function InstanceCard({ instance, templateName }: Props) {
               <p className="text-xs text-muted-foreground">{templateName}</p>
             )}
           </div>
+          <div className="flex items-center gap-2">
           <Badge
             variant="outline"
             className={
@@ -65,7 +76,17 @@ export default function InstanceCard({ instance, templateName }: Props) {
             )}
             {isSettled ? "Settled" : "In Progress"}
           </Badge>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 text-muted-foreground hover:text-destructive"
+            onClick={handleDelete}
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+          </div>
         </div>
+
         <div className="flex items-center gap-4">
           {participants.map((p) => (
             <ParticipantTotal

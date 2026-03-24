@@ -1,13 +1,13 @@
 import { useState } from "react"
 import { useParams, useNavigate } from "react-router-dom"
-import { ArrowLeft, CheckCircle2, RotateCcw, Pencil, Check, X } from "lucide-react"
+import { ArrowLeft, CheckCircle2, RotateCcw, Pencil, Check, X, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import ParticipantTotalsBar from "@/components/instances/ParticipantTotalsBar"
 import FieldSection from "@/components/instances/FieldSection"
-import { useInstance, useSettleInstance, useReopenInstance, useFieldValues } from "@/hooks/useInstances"
+import { useInstance, useSettleInstance, useReopenInstance, useFieldValues, useDeleteInstance } from "@/hooks/useInstances"
 import { useFields } from "@/hooks/useTemplates"
 import { renameInstance } from "@/api/instances"
 import { useQueryClient } from "@tanstack/react-query"
@@ -26,6 +26,7 @@ export default function InstanceDetailPage() {
 
   const settle = useSettleInstance()
   const reopen = useReopenInstance()
+  const { mutate: deleteInstance } = useDeleteInstance()
 
   const [editingName, setEditingName] = useState(false)
   const [nameInput, setNameInput] = useState("")
@@ -68,6 +69,13 @@ export default function InstanceDetailPage() {
 
   const handleReopen = async () => {
     await reopen.mutateAsync(instance.id)
+  }
+
+  const handleDelete = () => {
+    if (!confirm(`Delete "${instance.name}"? This cannot be undone.`)) return
+    deleteInstance(instance.id, {
+      onSuccess: () => navigate(isSettled ? "/settled" : "/instances"),
+    })
   }
 
   // Group field values by templateFieldId
@@ -148,6 +156,14 @@ export default function InstanceDetailPage() {
         </div>
 
         <div className="flex items-center gap-2 mt-1">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 text-muted-foreground hover:text-destructive"
+            onClick={handleDelete}
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
           {isSettled ? (
             <Button variant="outline" size="sm" onClick={handleReopen} disabled={reopen.isPending}>
               <RotateCcw className="h-3.5 w-3.5 mr-1.5" />

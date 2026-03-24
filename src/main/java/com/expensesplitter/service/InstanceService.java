@@ -104,6 +104,8 @@ public class InstanceService {
     }
 
     public void deleteInstance(UUID instanceId) {
+        participantEntryAmountRepository.deleteByInstanceFieldValueInstanceId(instanceId);
+        fieldValueRepository.deleteByInstanceId(instanceId);
         instanceRepository.deleteById(instanceId);
     }
 
