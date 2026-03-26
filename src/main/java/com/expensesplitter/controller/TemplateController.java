@@ -86,6 +86,14 @@ public class TemplateController {
         return ResponseEntity.ok(new ApiResponse<>(true, participants));
     }
 
+    @PutMapping("/participants/{participantId}/name")
+    public ResponseEntity<ApiResponse<TemplateParticipantResponse>> renameParticipant(
+            @PathVariable UUID participantId,
+            @RequestParam String name) {
+        return ResponseEntity.ok(new ApiResponse<>(true,
+                TemplateParticipantResponse.from(templateService.renameParticipant(participantId, name))));
+    }
+
     @DeleteMapping("/participants/{participantId}")
     public ResponseEntity<ApiResponse<Void>> deleteParticipant(@PathVariable UUID participantId) {
         templateService.deleteParticipant(participantId);
@@ -160,6 +168,14 @@ public class TemplateController {
         List<TemplateFieldResponse> fields = templateService.getFieldsByTemplate(templateId)
                 .stream().map(TemplateFieldResponse::from).toList();
         return ResponseEntity.ok(new ApiResponse<>(true, fields));
+    }
+
+    @PutMapping("/fields/{fieldId}/label")
+    public ResponseEntity<ApiResponse<TemplateFieldResponse>> renameField(
+            @PathVariable UUID fieldId,
+            @RequestParam String label) {
+        return ResponseEntity.ok(new ApiResponse<>(true,
+                TemplateFieldResponse.from(templateService.renameField(fieldId, label))));
     }
 
     @DeleteMapping("/fields/{fieldId}")
