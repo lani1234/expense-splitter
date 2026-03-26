@@ -25,7 +25,7 @@ function EditableRow({
   badge,
 }: {
   label: string
-  onSave: (val: string) => Promise<void>
+  onSave: (val: string) => Promise<unknown>
   badge?: string
 }) {
   const [editing, setEditing] = useState(false)
