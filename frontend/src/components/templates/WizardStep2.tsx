@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useRef } from "react"
 import { Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -19,6 +19,7 @@ export default function WizardStep2({ templateId, onNext, onBack }: Props) {
   const [newName, setNewName] = useState("")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
+  const inputRef = useRef<HTMLInputElement>(null)
 
   const addParticipant = async () => {
     const name = newName.trim()
@@ -29,6 +30,7 @@ export default function WizardStep2({ templateId, onNext, onBack }: Props) {
       await createParticipant(templateId, name, participants.length + 1)
       qc.invalidateQueries({ queryKey: TEMPLATE_KEYS.participants(templateId) })
       setNewName("")
+      inputRef.current?.focus()
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to add participant")
     } finally {
@@ -37,9 +39,7 @@ export default function WizardStep2({ templateId, onNext, onBack }: Props) {
   }
 
   const handleNext = async () => {
-    if (newName.trim()) {
-      await addParticipant()
-    }
+    if (newName.trim()) await addParticipant()
     onNext()
   }
 
@@ -58,19 +58,21 @@ export default function WizardStep2({ templateId, onNext, onBack }: Props) {
             <span className="text-sm font-medium">{p.name}</span>
           </div>
         ))}
-      </div>
 
-      <div className="flex gap-2">
-        <Input
-          placeholder="Participant name"
-          value={newName}
-          onChange={(e) => setNewName(e.target.value)}
-          className="bg-surface-elevated border-border"
-          onKeyDown={(e) => e.key === "Enter" && addParticipant()}
-        />
-        <Button variant="outline" size="icon" onClick={addParticipant} disabled={loading}>
-          <Plus className="h-4 w-4" />
-        </Button>
+        <div className="flex gap-2">
+          <Input
+            ref={inputRef}
+            placeholder="Participant name"
+            value={newName}
+            onChange={(e) => setNewName(e.target.value)}
+            className="bg-surface-elevated border-border"
+            onKeyDown={(e) => e.key === "Enter" && addParticipant()}
+            autoFocus={participants.length === 0}
+          />
+          <Button variant="outline" size="icon" onClick={addParticipant} disabled={loading}>
+            <Plus className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
 
       {error && <p className="text-sm text-destructive">{error}</p>}

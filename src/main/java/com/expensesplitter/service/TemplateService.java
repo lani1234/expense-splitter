@@ -132,6 +132,18 @@ public class TemplateService {
                 .orElseThrow(() -> new ResourceNotFoundException("Participant not found with id: " + participantId));
     }
 
+    public TemplateParticipant renameParticipant(UUID participantId, String name) {
+        if (name == null || name.trim().isEmpty()) {
+            throw new ValidationException("Participant name is required");
+        }
+        if (name.length() > 100) {
+            throw new ValidationException("Participant name cannot exceed 100 characters");
+        }
+        TemplateParticipant participant = getParticipantById(participantId);
+        participant.setName(name.trim());
+        return participantRepository.save(participant);
+    }
+
     public void deleteParticipant(UUID participantId) {
         participantRepository.deleteById(participantId);
     }
@@ -179,7 +191,7 @@ public class TemplateService {
         if (percent == null) {
             throw new ValidationException("Percent is required");
         }
-        if (percent.compareTo(java.math.BigDecimal.ZERO) <= 0 || percent.compareTo(new java.math.BigDecimal("100")) > 0) {
+        if (percent.compareTo(java.math.BigDecimal.ZERO) < 0 || percent.compareTo(new java.math.BigDecimal("100")) > 0) {
             throw new ValidationException("Percent must be between 0 and 100");
         }
 

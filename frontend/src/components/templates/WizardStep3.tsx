@@ -195,14 +195,10 @@ export default function WizardStep3({ templateId, onFinish, onBack }: Props) {
                     const val = e.target.value
                     setDraft((d) => {
                       const newPercents = { ...d.percents, [p.id]: val }
-                      // Auto-fill the last participant with the remainder
-                      const lastParticipant = participants[participants.length - 1]
-                      if (p.id !== lastParticipant.id) {
-                        const sumOthers = participants
-                          .filter((other) => other.id !== lastParticipant.id)
-                          .reduce((sum, other) => sum + (parseFloat(newPercents[other.id] ?? "") || 0), 0)
-                        const remainder = 100 - sumOthers
-                        newPercents[lastParticipant.id] = remainder > 0 ? String(Math.round(remainder * 10) / 10) : "0"
+                      if (participants.length === 2) {
+                        const other = participants.find((other) => other.id !== p.id)!
+                        const remainder = 100 - (parseFloat(val) || 0)
+                        newPercents[other.id] = remainder > 0 ? String(Math.round(remainder * 10) / 10) : "0"
                       }
                       return { ...d, percents: newPercents }
                     })
@@ -218,7 +214,7 @@ export default function WizardStep3({ templateId, onFinish, onBack }: Props) {
               percentsValid ? "text-primary" : "text-muted-foreground"
             }`}
           >
-            Total: {percentTotal.toFixed(1)}% {percentsValid ? "✓" : `(need 100%)`}
+            Total: {percentTotal.toFixed(1)}%{percentsValid ? " ✓" : participants.length >= 3 ? ` · ${(100 - percentTotal).toFixed(1)}% remaining` : ` (need 100%)`}
           </p>
         </div>
 

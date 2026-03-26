@@ -7,7 +7,7 @@ import { createTemplate } from "@/api/templates"
 import { CURRENT_USER_ID } from "@/config/constants"
 
 interface Props {
-  onNext: (templateId: string) => void
+  onNext: (templateId: string, templateName: string) => void
   onCancel: () => void
 }
 
@@ -26,7 +26,7 @@ export default function WizardStep1({ onNext, onCancel }: Props) {
     setError("")
     try {
       const template = await createTemplate(CURRENT_USER_ID, name.trim(), description.trim() || undefined)
-      onNext(template.id)
+      onNext(template.id, name.trim())
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to create template")
     } finally {

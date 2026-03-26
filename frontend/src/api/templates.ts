@@ -41,6 +41,11 @@ export const createParticipant = (templateId: string, name: string, displayOrder
     })
     .then((r) => r.data)
 
+export const renameParticipant = (participantId: string, name: string) =>
+  client
+    .put<TemplateParticipant>(`/templates/participants/${participantId}/name`, null, { params: { name } })
+    .then((r) => r.data)
+
 export const deleteParticipant = (participantId: string) =>
   client.delete(`/templates/participants/${participantId}`)
 

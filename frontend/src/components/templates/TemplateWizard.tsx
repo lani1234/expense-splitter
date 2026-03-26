@@ -25,13 +25,15 @@ export default function TemplateWizard({ open, onClose }: Props) {
   const qc = useQueryClient()
   const [step, setStep] = useState(1)
   const [templateId, setTemplateId] = useState<string | null>(null)
+  const [templateName, setTemplateName] = useState<string | null>(null)
 
   const handleClose = async () => {
-    if (templateId && step < 3) {
+    if (templateId) {
       await deleteTemplate(templateId).catch(() => null)
     }
     setStep(1)
     setTemplateId(null)
+    setTemplateName(null)
     onClose()
   }
 
@@ -39,6 +41,7 @@ export default function TemplateWizard({ open, onClose }: Props) {
     qc.invalidateQueries({ queryKey: TEMPLATE_KEYS.byUser() })
     setStep(1)
     setTemplateId(null)
+    setTemplateName(null)
     onClose()
     navigate("/templates")
   }
@@ -52,6 +55,9 @@ export default function TemplateWizard({ open, onClose }: Props) {
               {step === 1 && "New Template"}
               {step === 2 && "Add Participants"}
               {step === 3 && "Add Fields"}
+              {step > 1 && templateName && (
+                <span className="text-sm font-normal text-muted-foreground ml-2">— {templateName}</span>
+              )}
             </DialogTitle>
             <span className="text-sm text-muted-foreground mr-6">
               Step {step} of 3 — {STEP_LABELS[step - 1]}
@@ -72,8 +78,9 @@ export default function TemplateWizard({ open, onClose }: Props) {
         <div className="py-4">
           {step === 1 && (
             <WizardStep1
-              onNext={(id) => {
+              onNext={(id, name) => {
                 setTemplateId(id)
+                setTemplateName(name)
                 setStep(2)
               }}
               onCancel={handleClose}

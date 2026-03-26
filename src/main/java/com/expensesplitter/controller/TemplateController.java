@@ -86,6 +86,14 @@ public class TemplateController {
         return ResponseEntity.ok(new ApiResponse<>(true, participants));
     }
 
+    @PutMapping("/participants/{participantId}/name")
+    public ResponseEntity<ApiResponse<TemplateParticipantResponse>> renameParticipant(
+            @PathVariable UUID participantId,
+            @RequestParam String name) {
+        return ResponseEntity.ok(new ApiResponse<>(true,
+                TemplateParticipantResponse.from(templateService.renameParticipant(participantId, name))));
+    }
+
     @DeleteMapping("/participants/{participantId}")
     public ResponseEntity<ApiResponse<Void>> deleteParticipant(@PathVariable UUID participantId) {
         templateService.deleteParticipant(participantId);
