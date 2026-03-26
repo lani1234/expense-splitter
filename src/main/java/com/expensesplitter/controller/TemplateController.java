@@ -170,6 +170,14 @@ public class TemplateController {
         return ResponseEntity.ok(new ApiResponse<>(true, fields));
     }
 
+    @PutMapping("/fields/{fieldId}/label")
+    public ResponseEntity<ApiResponse<TemplateFieldResponse>> renameField(
+            @PathVariable UUID fieldId,
+            @RequestParam String label) {
+        return ResponseEntity.ok(new ApiResponse<>(true,
+                TemplateFieldResponse.from(templateService.renameField(fieldId, label))));
+    }
+
     @DeleteMapping("/fields/{fieldId}")
     public ResponseEntity<ApiResponse<Void>> deleteField(@PathVariable UUID fieldId) {
         templateService.deleteField(fieldId);

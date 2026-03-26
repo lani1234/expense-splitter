@@ -107,5 +107,10 @@ export const createField = (
     })
     .then((r) => r.data)
 
+export const renameField = (fieldId: string, label: string) =>
+  client
+    .put<TemplateField>(`/templates/fields/${fieldId}/label`, null, { params: { label } })
+    .then((r) => r.data)
+
 export const deleteField = (fieldId: string) =>
   client.delete(`/templates/fields/${fieldId}`)

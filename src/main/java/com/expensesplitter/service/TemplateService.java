@@ -257,6 +257,18 @@ public class TemplateService {
                 .orElseThrow(() -> new ResourceNotFoundException("Field not found with id: " + fieldId));
     }
 
+    public TemplateField renameField(UUID fieldId, String label) {
+        if (label == null || label.trim().isEmpty()) {
+            throw new ValidationException("Field label is required");
+        }
+        if (label.length() > 255) {
+            throw new ValidationException("Field label cannot exceed 255 characters");
+        }
+        TemplateField field = getFieldById(fieldId);
+        field.setLabel(label.trim());
+        return fieldRepository.save(field);
+    }
+
     public void deleteField(UUID fieldId) {
         fieldRepository.deleteById(fieldId);
     }

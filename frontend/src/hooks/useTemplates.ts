@@ -59,6 +59,33 @@ export function useFields(templateId: string) {
   })
 }
 
+export function useUpdateTemplate() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, name, description }: { id: string; name: string; description?: string }) =>
+      api.updateTemplate(id, name, description),
+    onSuccess: () => qc.invalidateQueries({ queryKey: TEMPLATE_KEYS.byUser() }),
+  })
+}
+
+export function useRenameParticipant(templateId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ participantId, name }: { participantId: string; name: string }) =>
+      api.renameParticipant(participantId, name),
+    onSuccess: () => qc.invalidateQueries({ queryKey: TEMPLATE_KEYS.participants(templateId) }),
+  })
+}
+
+export function useRenameField(templateId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ fieldId, label }: { fieldId: string; label: string }) =>
+      api.renameField(fieldId, label),
+    onSuccess: () => qc.invalidateQueries({ queryKey: TEMPLATE_KEYS.fields(templateId) }),
+  })
+}
+
 export function useCreateTemplate() {
   const qc = useQueryClient()
   return useMutation({
