@@ -65,7 +65,7 @@ public class TemplateService {
     }
 
     public List<Template> getTemplatesByUserId(UUID userId) {
-        return templateRepository.findByUserId(userId);
+        return templateRepository.findByUserIdOrderByCreatedAtAsc(userId);
     }
 
     public List<Template> getAllTemplates() {
