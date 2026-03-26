@@ -218,14 +218,16 @@ export default function FieldValueRow({
   }
 
   return (
-    <div className="flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-surface-elevated group">
-      <span className="shrink-0 text-sm font-semibold text-foreground tabular-nums min-w-[5.5rem]">
-        ${fieldValue.amount.toFixed(2)}
-      </span>
-      {fieldValue.note && (
-        <span className="text-xs text-muted-foreground italic shrink-0">{fieldValue.note}</span>
-      )}
-      <span className="flex-1 flex items-center justify-end flex-wrap gap-1.5">
+    <div className="flex items-center gap-3 rounded-lg px-3 py-3 hover:bg-surface-elevated group">
+      <div className="shrink-0 flex flex-col w-[8rem]">
+        <span className="text-sm font-semibold text-foreground tabular-nums">
+          ${fieldValue.amount.toFixed(2)}
+        </span>
+        {fieldValue.note && (
+          <span className="text-xs text-muted-foreground italic break-words">{fieldValue.note}</span>
+        )}
+      </div>
+      <span className={"flex-1 flex flex-wrap justify-start gap-1.5 items-center"}>
         {participantData.map(({ name, split, amount, colorIndex }, i) => {
           const colors = PARTICIPANT_COLORS[colorIndex % PARTICIPANT_COLORS.length]
           return (
@@ -233,7 +235,7 @@ export default function FieldValueRow({
               key={i}
               className={`text-xs rounded-full border px-2.5 py-0.5 whitespace-nowrap inline-flex items-center gap-1.5 ${colors.bg} ${colors.text}`}
             >
-              <span className="font-semibold">{name}</span>
+              <span className="font-semibold w-[3rem] truncate">{name}</span>
               <span className="opacity-40">·</span>
               <span className="opacity-70 min-w-[2.25rem] text-center">{split}</span>
               <span className="opacity-40">·</span>

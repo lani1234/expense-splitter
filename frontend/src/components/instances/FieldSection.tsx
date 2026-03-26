@@ -116,17 +116,18 @@ export default function FieldSection({
         {fieldValues.length === 0 ? (
           <p className="px-3 py-2 text-sm text-muted-foreground italic">No entries yet</p>
         ) : (
-          <div className="divide-y divide-border">
-            {fieldValues.map((fv) => (
-              <FieldValueRow
-                key={fv.id}
-                fieldValue={fv}
-                templateId={templateId}
-                instanceId={instanceId}
-                isDeletable={isMultiple}
-                isSettled={isSettled}
-                defaultSplitRuleId={field.defaultSplitRuleId}
-              />
+          <div className="divide-y-2 divide-slate-200">
+            {fieldValues.map((fv, i) => (
+              <div key={fv.id} className={i % 2 === 1 ? "bg-slate-100" : ""}>
+                <FieldValueRow
+                  fieldValue={fv}
+                  templateId={templateId}
+                  instanceId={instanceId}
+                  isDeletable={isMultiple}
+                  isSettled={isSettled}
+                  defaultSplitRuleId={field.defaultSplitRuleId}
+                />
+              </div>
             ))}
           </div>
         )}
