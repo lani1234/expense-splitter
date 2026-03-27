@@ -43,7 +43,7 @@ This is a medium-large feature split into 4 phases. Each phase is independently 
 </dependency>
 ```
 
-### 1b. Migration V8 — app_user table + guest seed
+### 1b. Migration V9 — app_user table + guest seed
 ```sql
 CREATE TABLE app_user (
   id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -91,7 +91,7 @@ jwt.guest-expiration-hours=24
 
 ## Phase 2 — Backend: Secure Existing Endpoints
 
-### 2a. Migration V9 — add user_id to template_instance
+### 2a. Migration V10 — add user_id to template_instance
 ```sql
 ALTER TABLE template_instance ADD COLUMN user_id UUID REFERENCES app_user(id);
 UPDATE template_instance ti
@@ -185,13 +185,34 @@ export function ProtectedRoute({ children }) {
 
 ---
 
-## Phase 4 — Guest UX Polish
+## Phase 4 — Guest / Portfolio Experience
 
-- Guest user UUID `00000000-0000-0000-0000-000000000002` seeded in V8
-- `POST /api/auth/guest` returns a 24h JWT for the guest user — same code path as login
-- Guest sees shared templates/instances (no isolation — intentional)
-- Guest banner with link to register (`/login?register=true` query param to pre-open the register form)
-- Pre-seed a few demo templates/instances for the guest account in a V10 migration so new visitors see something useful immediately
+### 4a. Login page as landing page
+The `/login` page doubles as the app's public homepage. It should include:
+- A brief description of what weeven is: *"A tool for tracking and splitting shared expenses between people. Define your expense categories and participants once as a template, then create monthly instances to track actuals."*
+- 1–2 annotated screenshots (template editor + instance detail view) so visitors understand the app before logging in — reduces need for in-app onboarding
+- Sign in form (email + password)
+- "Continue as Guest" button — calls `POST /api/auth/guest`, stores token, routes to `/templates`
+- "Create an account to start building your own templates and instances" CTA that opens the register form (`/login?register=true`)
+
+### 4b. Guest account
+- Guest user UUID `00000000-0000-0000-0000-000000000002` seeded in V9 with role `GUEST`
+- `POST /api/auth/guest` returns a 24h JWT — same code path as login
+- Guest sees pre-seeded demo templates and instances (realistic household expense example)
+- Guest is **read-only** — no creating, editing, or deleting anything
+
+### 4c. Read-only enforcement
+- **Backend:** write endpoints (`POST`, `PUT`, `DELETE`) check for `GUEST` role and return 403
+- **Frontend:** `AuthContext` exposes `user.role`; action buttons (create, edit, delete) are hidden when `role === 'GUEST'`
+
+### 4d. Guest banner
+A persistent banner shown inside `AppShell` when `role === 'GUEST'`:
+*"You're viewing a demo. [Create an account] to track your own expenses."*
+- "Create an account" routes to `/login?register=true`
+
+### 4e. Demo data
+- Pre-seed realistic demo templates and instances for the guest account in a **V11 migration**
+- Should illustrate a genuine use case (e.g. a couple tracking monthly household expenses across a few categories, with at least one settled instance)
 
 ---
 
@@ -204,8 +225,8 @@ export function ProtectedRoute({ children }) {
 - `src/main/java/com/expensesplitter/service/JwtService.java`, `AuthService.java`
 - `src/main/java/com/expensesplitter/controller/AuthController.java`
 - `src/main/java/com/expensesplitter/config/SecurityConfig.java`, `JwtAuthFilter.java`
-- `src/main/resources/db/migration/V8__add_app_user_table.sql`
-- `src/main/resources/db/migration/V9__add_user_id_to_template_instance.sql`
+- `src/main/resources/db/migration/V9__add_app_user_table.sql`
+- `src/main/resources/db/migration/V10__add_user_id_to_template_instance.sql`
 
 **Modified backend:**
 - `pom.xml`
@@ -217,7 +238,10 @@ export function ProtectedRoute({ children }) {
 **New frontend:**
 - `frontend/src/context/AuthContext.tsx`
 - `frontend/src/components/ProtectedRoute.tsx`
-- `frontend/src/pages/LoginPage.tsx`
+- `frontend/src/pages/LoginPage.tsx` (doubles as landing page with explainer + screenshots)
+
+**New migrations:**
+- `src/main/resources/db/migration/V11__seed_guest_demo_data.sql`
 
 **Modified frontend:**
 - `frontend/src/api/client.ts`, `templates.ts`, `instances.ts`
@@ -236,7 +260,9 @@ export function ProtectedRoute({ children }) {
 4. `GET /api/templates` with Bearer token → 200, only that user's templates
 5. `POST /api/auth/guest` → 200 + guest JWT
 6. Frontend: visit `/templates` unauthenticated → redirected to `/login`
-7. Register new account → land on `/templates` (empty)
-8. Create a template + instance → visible only to that user; second user sees nothing
-9. "Continue as Guest" → sees shared guest data + guest banner
-10. NavBar shows display name + logout navigates to `/login`
+7. `/login` shows app description + screenshots + sign in form + "Continue as Guest" button
+8. Register new account → land on `/templates` (empty)
+9. Create a template + instance → visible only to that user; second user sees nothing
+10. "Continue as Guest" → sees pre-seeded demo data + read-only guest banner
+11. Guest attempting to create/edit/delete → 403 from backend; buttons not shown in UI
+12. NavBar shows display name + logout navigates to `/login`
