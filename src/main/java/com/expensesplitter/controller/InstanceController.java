@@ -131,9 +131,10 @@ public class InstanceController {
             @RequestParam(required = false) LocalDate entryDate,
             @RequestParam(required = false) SplitMode splitMode,
             @RequestParam(required = false) UUID overrideSplitRuleId,
+            @RequestParam(required = false) UUID payerParticipantId,
             @RequestBody(required = false) java.util.Map<UUID, BigDecimal> participantAmounts) {
         InstanceFieldValueResponse fieldValue = InstanceFieldValueResponse.from(
-                instanceService.updateFieldValue(fieldValueId, amount, note, entryDate, splitMode, overrideSplitRuleId, participantAmounts));
+                instanceService.updateFieldValue(fieldValueId, amount, note, entryDate, splitMode, overrideSplitRuleId, participantAmounts, payerParticipantId));
         return ResponseEntity.ok(new ApiResponse<>(true, fieldValue, "Field value updated successfully"));
     }
 

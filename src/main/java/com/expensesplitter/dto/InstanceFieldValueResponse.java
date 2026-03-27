@@ -15,7 +15,8 @@ public record InstanceFieldValueResponse(
         String note,
         LocalDate entryDate,
         SplitMode splitMode,
-        UUID overrideSplitRuleId
+        UUID overrideSplitRuleId,
+        UUID payerParticipantId
 ) {
     public static InstanceFieldValueResponse from(InstanceFieldValue e) {
         return new InstanceFieldValueResponse(
@@ -26,7 +27,8 @@ public record InstanceFieldValueResponse(
                 e.getNote(),
                 e.getEntryDate(),
                 e.getSplitMode(),
-                e.getOverrideSplitRule() != null ? e.getOverrideSplitRule().getId() : null
+                e.getOverrideSplitRule() != null ? e.getOverrideSplitRule().getId() : null,
+                e.getPayerParticipant() != null ? e.getPayerParticipant().getId() : null
         );
     }
 }

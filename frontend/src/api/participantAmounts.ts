@@ -1,5 +1,5 @@
 import client from "./client"
-import type { ParticipantEntryAmount } from "@/types"
+import type { ParticipantEntryAmount, ParticipantTotalsResponse } from "@/types"
 
 export const getAmountsByFieldValue = (fieldValueId: string) =>
   client
@@ -11,6 +11,11 @@ export const getParticipantTotal = (instanceId: string, participantId: string) =
     .get<number>(
       `/participant-entry-amounts/instance/${instanceId}/participant/${participantId}/total`
     )
+    .then((r) => r.data)
+
+export const getInstanceTotals = (instanceId: string) =>
+  client
+    .get<ParticipantTotalsResponse>(`/participant-entry-amounts/instance/${instanceId}/totals`)
     .then((r) => r.data)
 
 export const updateParticipantEntryAmount = (id: string, amount: number) =>

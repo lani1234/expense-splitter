@@ -140,6 +140,11 @@ public class InstanceService {
             fieldValue.setOverrideSplitRule(overrideRule);
         }
 
+        if (request.getPayerParticipantId() != null) {
+            TemplateParticipant payer = templateService.getParticipantById(request.getPayerParticipantId());
+            fieldValue.setPayerParticipant(payer);
+        }
+
         InstanceFieldValue savedInstanceFieldValue = fieldValueRepository.save(fieldValue);
 
         // Handle different split modes
@@ -201,7 +206,8 @@ public class InstanceService {
                                                java.time.LocalDate entryDate,
                                                com.expensesplitter.enums.SplitMode splitMode,
                                                UUID overrideSplitRuleId,
-                                               Map<UUID, BigDecimal> participantAmounts) {
+                                               Map<UUID, BigDecimal> participantAmounts,
+                                               UUID payerParticipantId) {
         InstanceFieldValue fieldValue = getFieldValueById(fieldValueId);
         fieldValue.setAmount(amount);
         fieldValue.setNote(note);
@@ -210,6 +216,13 @@ public class InstanceService {
 
         // Clear any previously stored override rule (no longer used for editing)
         fieldValue.setOverrideSplitRule(null);
+
+        if (payerParticipantId != null) {
+            TemplateParticipant payer = templateService.getParticipantById(payerParticipantId);
+            fieldValue.setPayerParticipant(payer);
+        } else {
+            fieldValue.setPayerParticipant(null);
+        }
 
         InstanceFieldValue savedFieldValue = fieldValueRepository.save(fieldValue);
 
@@ -295,6 +308,10 @@ public class InstanceService {
             }
 
             fieldValue.setSplitMode(SplitMode.TEMPLATE_FIELD_PERCENT_SPLIT);
+
+            if (field.getDefaultPayerParticipant() != null) {
+                fieldValue.setPayerParticipant(field.getDefaultPayerParticipant());
+            }
 
             InstanceFieldValue savedFieldValue = fieldValueRepository.save(fieldValue);
 

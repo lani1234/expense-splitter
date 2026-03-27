@@ -179,7 +179,11 @@ export default function InstanceDetailPage() {
       </div>
 
       {/* Totals bar */}
-      <ParticipantTotalsBar instanceId={instance.id} templateId={instance.templateId} />
+      <ParticipantTotalsBar
+        instanceId={instance.id}
+        templateId={instance.templateId}
+        grandTotal={fieldValues.reduce((sum, fv) => sum + fv.amount, 0)}
+      />
 
       <Separator className="bg-border" />
 

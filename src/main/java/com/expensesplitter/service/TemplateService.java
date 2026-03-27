@@ -215,7 +215,8 @@ public class TemplateService {
 
     // Template Field Operations
     public TemplateField addField(UUID templateId, String label, com.expensesplitter.enums.FieldType fieldType,
-                                  UUID defaultSplitRuleId, int displayOrder, BigDecimal defaultAmount) {
+                                  UUID defaultSplitRuleId, int displayOrder, BigDecimal defaultAmount,
+                                  UUID defaultPayerParticipantId) {
         if (templateId == null) {
             throw new ValidationException("Template ID is required");
         }
@@ -243,6 +244,11 @@ public class TemplateService {
         if (defaultSplitRuleId != null) {
             SplitRule defaultRule = getSplitRuleById(defaultSplitRuleId);
             field.setDefaultSplitRule(defaultRule);
+        }
+
+        if (defaultPayerParticipantId != null) {
+            TemplateParticipant payer = getParticipantById(defaultPayerParticipantId);
+            field.setDefaultPayerParticipant(payer);
         }
 
         return fieldRepository.save(field);

@@ -13,6 +13,7 @@ public record TemplateFieldResponse(
         FieldType fieldType,
         UUID defaultSplitRuleId,
         BigDecimal defaultAmount,
+        UUID defaultPayerParticipantId,
         int displayOrder
 ) {
     public static TemplateFieldResponse from(TemplateField e) {
@@ -23,6 +24,7 @@ public record TemplateFieldResponse(
                 e.getFieldType(),
                 e.getDefaultSplitRule() != null ? e.getDefaultSplitRule().getId() : null,
                 e.getDefaultAmount(),
+                e.getDefaultPayerParticipant() != null ? e.getDefaultPayerParticipant().getId() : null,
                 e.getDisplayOrder()
         );
     }

@@ -1,13 +1,13 @@
 package com.expensesplitter.service;
 
+import com.expensesplitter.dto.ParticipantTotalsResponse;
 import com.expensesplitter.entity.*;
 import com.expensesplitter.repository.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 @Service
 @Transactional
@@ -99,6 +99,41 @@ public class ParticipantEntryAmountService {
     }
 
     // Utility Methods
+    public ParticipantTotalsResponse getInstanceTotals(UUID instanceId) {
+        List<InstanceFieldValue> fieldValues = instanceService.getFieldValuesByInstance(instanceId);
+
+        boolean hasPayers = fieldValues.stream()
+                .anyMatch(fv -> fv.getPayerParticipant() != null);
+
+        Map<UUID, BigDecimal> shares = new HashMap<>();
+        Map<UUID, BigDecimal> paid = new HashMap<>();
+
+        for (InstanceFieldValue fv : fieldValues) {
+            List<ParticipantEntryAmount> amounts = participantEntryAmountRepository.findByInstanceFieldValueId(fv.getId());
+            for (ParticipantEntryAmount pea : amounts) {
+                UUID pid = pea.getTemplateParticipant().getId();
+                shares.merge(pid, pea.getAmount(), BigDecimal::add);
+            }
+            if (fv.getPayerParticipant() != null) {
+                UUID pid = fv.getPayerParticipant().getId();
+                paid.merge(pid, fv.getAmount(), BigDecimal::add);
+            }
+        }
+
+        Map<UUID, BigDecimal> net = new HashMap<>();
+        if (hasPayers) {
+            Set<UUID> allIds = new HashSet<>(shares.keySet());
+            allIds.addAll(paid.keySet());
+            for (UUID id : allIds) {
+                BigDecimal s = shares.getOrDefault(id, BigDecimal.ZERO);
+                BigDecimal p = paid.getOrDefault(id, BigDecimal.ZERO);
+                net.put(id, s.subtract(p));
+            }
+        }
+
+        return new ParticipantTotalsResponse(hasPayers, shares, paid, net);
+    }
+
     public BigDecimal getTotalAmountForParticipantInInstance(UUID instanceId, UUID participantId) {
         List<InstanceFieldValue> fieldValues = instanceService.getFieldValuesByInstance(instanceId);
 

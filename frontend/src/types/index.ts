@@ -42,6 +42,7 @@ export interface TemplateField {
   fieldType: FieldType
   defaultSplitRuleId?: string
   defaultAmount?: number
+  defaultPayerParticipantId?: string
   displayOrder: number
 }
 
@@ -62,6 +63,14 @@ export interface InstanceFieldValue {
   entryDate?: string
   splitMode: SplitMode
   overrideSplitRuleId?: string
+  payerParticipantId?: string
+}
+
+export interface ParticipantTotalsResponse {
+  hasPayers: boolean
+  shares: Record<string, number>
+  paid: Record<string, number>
+  net: Record<string, number>
 }
 
 export interface ParticipantEntryAmount {
@@ -80,4 +89,5 @@ export interface AddFieldValueRequest {
   splitMode: SplitMode
   overrideSplitRuleId?: string
   participantAmounts?: Record<string, number>
+  payerParticipantId?: string
 }

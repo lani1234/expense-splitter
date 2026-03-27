@@ -99,11 +99,12 @@ export const createField = (
   fieldType: FieldType,
   displayOrder: number,
   defaultSplitRuleId?: string,
-  defaultAmount?: number
+  defaultAmount?: number,
+  defaultPayerParticipantId?: string
 ) =>
   client
     .post<TemplateField>(`/templates/${templateId}/fields`, null, {
-      params: { label, fieldType, displayOrder, defaultSplitRuleId, defaultAmount },
+      params: { label, fieldType, displayOrder, defaultSplitRuleId, defaultAmount, defaultPayerParticipantId },
     })
     .then((r) => r.data)
 

@@ -26,6 +26,7 @@ interface FieldDraft {
   label: string
   fieldType: FieldType
   defaultAmount: string
+  defaultPayerParticipantId: string
   percents: Record<string, string>
 }
 
@@ -33,6 +34,7 @@ const emptyDraft = (participantIds: string[]): FieldDraft => ({
   label: "",
   fieldType: "SINGLE",
   defaultAmount: "",
+  defaultPayerParticipantId: "",
   percents: Object.fromEntries(participantIds.map((id) => [id, ""])),
 })
 
@@ -86,7 +88,8 @@ export default function WizardStep3({ templateId, onFinish, onBack }: Props) {
         draft.fieldType,
         fields.length + 1,
         rule.id,
-        draft.defaultAmount ? parseFloat(draft.defaultAmount) : undefined
+        draft.defaultAmount ? parseFloat(draft.defaultAmount) : undefined,
+        draft.defaultPayerParticipantId || undefined
       )
 
       qc.invalidateQueries({ queryKey: TEMPLATE_KEYS.fields(templateId) })
@@ -122,6 +125,11 @@ export default function WizardStep3({ templateId, onFinish, onBack }: Props) {
               {f.defaultAmount != null && f.defaultAmount > 0 && (
                 <span className="text-xs text-muted-foreground">
                   ${f.defaultAmount.toFixed(2)}
+                </span>
+              )}
+              {f.defaultPayerParticipantId && (
+                <span className="text-xs text-slate-500">
+                  Paid by {participants.find((p) => p.id === f.defaultPayerParticipantId)?.name ?? "?"}
                 </span>
               )}
               {f.defaultSplitRuleId && (
@@ -175,6 +183,21 @@ export default function WizardStep3({ templateId, onFinish, onBack }: Props) {
               />
             </div>
           </div>
+        </div>
+
+        {/* Default Payer */}
+        <div className="space-y-1.5">
+          <Label className="text-xs">Default Payer</Label>
+          <select
+            value={draft.defaultPayerParticipantId}
+            onChange={(e) => setDraft((d) => ({ ...d, defaultPayerParticipantId: e.target.value }))}
+            className="h-8 text-sm w-full rounded-md border border-border bg-background px-2"
+          >
+            <option value="">— not set —</option>
+            {participants.map((p) => (
+              <option key={p.id} value={p.id}>{p.name}</option>
+            ))}
+          </select>
         </div>
 
         {/* Split section — always visible, required */}

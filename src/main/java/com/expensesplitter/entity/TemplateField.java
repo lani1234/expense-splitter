@@ -39,6 +39,10 @@ public class TemplateField {
     @Column(name = "default_amount")
     private BigDecimal defaultAmount;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "default_payer_participant_id")
+    private TemplateParticipant defaultPayerParticipant;
+
     @Column(name = "display_order", nullable = false)
     private int displayOrder;
 }

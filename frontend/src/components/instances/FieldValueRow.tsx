@@ -68,6 +68,7 @@ export default function FieldValueRow({
   const [splitMode, setSplitMode] = useState<SplitMode>(fieldValue.splitMode)
   const [fixedAmounts, setFixedAmounts] = useState<Record<string, number>>({})
   const [customPercentages, setCustomPercentages] = useState<Record<string, number>>({})
+  const [payerParticipantId, setPayerParticipantId] = useState(fieldValue.payerParticipantId ?? "")
   const [saving, setSaving] = useState(false)
 
   // When entering edit mode for a FIELD_VALUE_CUSTOM_PERCENT entry, reverse-engineer
@@ -134,6 +135,7 @@ export default function FieldValueRow({
         note: note.trim() || undefined,
         splitMode,
         participantAmounts,
+        payerParticipantId: payerParticipantId || null,
       })
       setEditing(false)
     } catch (e) {
@@ -158,6 +160,7 @@ export default function FieldValueRow({
     setSplitMode(fieldValue.splitMode)
     setFixedAmounts({})
     setCustomPercentages({})
+    setPayerParticipantId(fieldValue.payerParticipantId ?? "")
     setEditing(false)
   }
 
@@ -203,6 +206,20 @@ export default function FieldValueRow({
           onCustomPercentagesChange={setCustomPercentages}
         />
 
+        <div>
+          <label className="text-xs text-muted-foreground mb-1 block">Paid by</label>
+          <select
+            value={payerParticipantId}
+            onChange={(e) => setPayerParticipantId(e.target.value)}
+            className="h-8 text-sm w-full rounded-md border border-border bg-background px-2"
+          >
+            <option value="">— not tracked —</option>
+            {participants.map((p) => (
+              <option key={p.id} value={p.id}>{p.name}</option>
+            ))}
+          </select>
+        </div>
+
         <div className="flex justify-end gap-2">
           <Button variant="ghost" size="sm" onClick={handleCancel} className="h-7">
             <X className="h-3.5 w-3.5 mr-1" />
@@ -243,6 +260,14 @@ export default function FieldValueRow({
             </span>
           )
         })}
+        {fieldValue.payerParticipantId && (() => {
+          const payerName = participants.find((p) => p.id === fieldValue.payerParticipantId)?.name
+          return payerName ? (
+            <span className="text-xs rounded-full border px-2.5 py-0.5 bg-slate-100 border-slate-300 text-slate-500 whitespace-nowrap shrink-0">
+              Paid by {payerName}
+            </span>
+          ) : null
+        })()}
       </span>
       {!isSettled && (
         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity w-[3.25rem] shrink-0">

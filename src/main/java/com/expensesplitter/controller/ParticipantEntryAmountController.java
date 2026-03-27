@@ -1,6 +1,7 @@
 package com.expensesplitter.controller;
 
 import com.expensesplitter.dto.ParticipantEntryAmountResponse;
+import com.expensesplitter.dto.ParticipantTotalsResponse;
 import com.expensesplitter.service.ParticipantEntryAmountService;
 import com.expensesplitter.service.ApiResponse;
 import org.springframework.http.HttpStatus;
@@ -99,5 +100,12 @@ public class ParticipantEntryAmountController {
             @PathVariable UUID participantId) {
         BigDecimal total = participantEntryAmountService.getTotalAmountForParticipantInInstance(instanceId, participantId);
         return ResponseEntity.ok(new ApiResponse<>(true, total));
+    }
+
+    @GetMapping("/instance/{instanceId}/totals")
+    public ResponseEntity<ApiResponse<ParticipantTotalsResponse>> getInstanceTotals(
+            @PathVariable UUID instanceId) {
+        ParticipantTotalsResponse totals = participantEntryAmountService.getInstanceTotals(instanceId);
+        return ResponseEntity.ok(new ApiResponse<>(true, totals));
     }
 }

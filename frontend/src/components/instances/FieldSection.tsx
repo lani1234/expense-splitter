@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import FieldValueRow from "./FieldValueRow"
 import SplitEditor from "./SplitEditor"
 import { useAddFieldValue } from "@/hooks/useFieldValues"
+import { useParticipants } from "@/hooks/useTemplates"
 import type { TemplateField, InstanceFieldValue, SplitMode } from "@/types"
 import { useToast } from "@/hooks/use-toast"
 
@@ -26,12 +27,14 @@ export default function FieldSection({
 }: Props) {
   const { toast } = useToast()
   const addFieldValue = useAddFieldValue(instanceId)
+  const { data: participants = [] } = useParticipants(templateId)
   const [showAdd, setShowAdd] = useState(false)
   const [newAmount, setNewAmount] = useState("")
   const [newNote, setNewNote] = useState("")
   const [newSplitMode, setNewSplitMode] = useState<SplitMode>("TEMPLATE_FIELD_PERCENT_SPLIT")
   const [newFixedAmounts, setNewFixedAmounts] = useState<Record<string, number>>({})
   const [newCustomPercentages, setNewCustomPercentages] = useState<Record<string, number>>({})
+  const [newPayerParticipantId, setNewPayerParticipantId] = useState("")
   const [adding, setAdding] = useState(false)
 
   const isMultiple = field.fieldType === "MULTIPLE"
@@ -85,6 +88,7 @@ export default function FieldSection({
         note: newNote.trim() || undefined,
         splitMode: newSplitMode,
         participantAmounts,
+        payerParticipantId: newPayerParticipantId || undefined,
       })
       setShowAdd(false)
       setNewAmount("")
@@ -92,6 +96,7 @@ export default function FieldSection({
       setNewSplitMode("TEMPLATE_FIELD_PERCENT_SPLIT")
       setNewFixedAmounts({})
       setNewCustomPercentages({})
+      setNewPayerParticipantId("")
     } catch (e) {
       toast({
         title: "Failed to add entry",
@@ -175,6 +180,19 @@ export default function FieldSection({
                   customPercentages={newCustomPercentages}
                   onCustomPercentagesChange={setNewCustomPercentages}
                 />
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1 block">Paid by</label>
+                  <select
+                    value={newPayerParticipantId}
+                    onChange={(e) => setNewPayerParticipantId(e.target.value)}
+                    className="h-8 text-sm w-full rounded-md border border-border bg-background px-2"
+                  >
+                    <option value="">— not tracked —</option>
+                    {participants.map((p) => (
+                      <option key={p.id} value={p.id}>{p.name}</option>
+                    ))}
+                  </select>
+                </div>
                 <div className="flex gap-2 justify-end">
                   <Button variant="ghost" size="sm" onClick={() => setShowAdd(false)} className="h-7">
                     Cancel

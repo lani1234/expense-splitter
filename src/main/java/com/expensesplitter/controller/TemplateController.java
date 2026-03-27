@@ -156,9 +156,10 @@ public class TemplateController {
             @RequestParam FieldType fieldType,
             @RequestParam(required = false) UUID defaultSplitRuleId,
             @RequestParam int displayOrder,
-            @RequestParam(required = false) BigDecimal defaultAmount) {
+            @RequestParam(required = false) BigDecimal defaultAmount,
+            @RequestParam(required = false) UUID defaultPayerParticipantId) {
         TemplateFieldResponse field = TemplateFieldResponse.from(
-                templateService.addField(templateId, label, fieldType, defaultSplitRuleId, displayOrder, defaultAmount));
+                templateService.addField(templateId, label, fieldType, defaultSplitRuleId, displayOrder, defaultAmount, defaultPayerParticipantId));
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(new ApiResponse<>(true, field, "Field added successfully"));
     }

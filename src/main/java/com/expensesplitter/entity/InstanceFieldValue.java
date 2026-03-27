@@ -48,6 +48,10 @@ public class InstanceFieldValue {
     @JoinColumn(name = "override_split_rule_id")
     private SplitRule overrideSplitRule;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "payer_participant_id")
+    private TemplateParticipant payerParticipant;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 

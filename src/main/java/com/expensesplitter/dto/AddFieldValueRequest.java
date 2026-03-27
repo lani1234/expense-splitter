@@ -14,6 +14,7 @@ public class AddFieldValueRequest {
     private SplitMode splitMode;
     private UUID overrideSplitRuleId;
     private Map<UUID, BigDecimal> participantAmounts; // For FIELD_VALUE_FIXED_AMOUNTS
+    private UUID payerParticipantId;
 
     // Getters and Setters
     public UUID getTemplateFieldId() {
@@ -70,5 +71,13 @@ public class AddFieldValueRequest {
 
     public void setParticipantAmounts(Map<UUID, BigDecimal> participantAmounts) {
         this.participantAmounts = participantAmounts;
+    }
+
+    public UUID getPayerParticipantId() {
+        return payerParticipantId;
+    }
+
+    public void setPayerParticipantId(UUID payerParticipantId) {
+        this.payerParticipantId = payerParticipantId;
     }
 }

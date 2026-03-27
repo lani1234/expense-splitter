@@ -85,6 +85,7 @@ export const updateFieldValue = (
     splitMode: SplitMode
     overrideSplitRuleId?: string
     participantAmounts?: Record<string, number>
+    payerParticipantId?: string | null
   }
 ) =>
   client
@@ -94,6 +95,7 @@ export const updateFieldValue = (
         note: params.note,
         splitMode: params.splitMode,
         overrideSplitRuleId: params.overrideSplitRuleId,
+        payerParticipantId: params.payerParticipantId ?? undefined,
       },
     })
     .then((r) => r.data)
