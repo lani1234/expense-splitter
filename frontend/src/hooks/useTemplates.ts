@@ -64,7 +64,10 @@ export function useUpdateTemplate() {
   return useMutation({
     mutationFn: ({ id, name, description }: { id: string; name: string; description?: string }) =>
       api.updateTemplate(id, name, description),
-    onSuccess: () => qc.invalidateQueries({ queryKey: TEMPLATE_KEYS.byUser() }),
+    onSuccess: (_, { id }) => {
+      qc.invalidateQueries({ queryKey: TEMPLATE_KEYS.byUser() })
+      qc.invalidateQueries({ queryKey: TEMPLATE_KEYS.detail(id) })
+    },
   })
 }
 
@@ -82,6 +85,23 @@ export function useRenameField(templateId: string) {
   return useMutation({
     mutationFn: ({ fieldId, label }: { fieldId: string; label: string }) =>
       api.renameField(fieldId, label),
+    onSuccess: () => qc.invalidateQueries({ queryKey: TEMPLATE_KEYS.fields(templateId) }),
+  })
+}
+
+export function useUpdateField(templateId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ fieldId, ...params }: {
+      fieldId: string
+      label?: string
+      defaultAmount?: number
+      defaultSplitRuleId?: string
+      defaultPayerParticipantId?: string
+      clearDefaultAmount?: boolean
+      clearDefaultSplitRule?: boolean
+      clearDefaultPayer?: boolean
+    }) => api.updateField(fieldId, params),
     onSuccess: () => qc.invalidateQueries({ queryKey: TEMPLATE_KEYS.fields(templateId) }),
   })
 }

@@ -11,7 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
-import { createField, createSplitRule, createAllocation, getParticipants } from "@/api/templates"
+import { createField, createSplitRule, createAllocation, getParticipants, getSplitRules, getAllocations } from "@/api/templates"
 import { useFields, TEMPLATE_KEYS } from "@/hooks/useTemplates"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import type { FieldType } from "@/types"
@@ -72,22 +72,42 @@ export default function WizardStep3({ templateId, onFinish, onBack }: Props) {
     setLoading(true)
     setError("")
     try {
-      // 1. Create the split rule (named after the field label)
-      const rule = await createSplitRule(templateId, draft.label.trim())
-
-      // 2. Create an allocation for each participant
+      // 1. Build the desired percentages for each participant
+      const wantedPercents: Record<string, number> = {}
       for (const p of participants) {
-        const pct = parseFloat(draft.percents[p.id] ?? "0") || 0
-        await createAllocation(rule.id, p.id, pct)
+        wantedPercents[p.id] = parseFloat(draft.percents[p.id] ?? "0") || 0
       }
 
-      // 3. Create the field, linking it to the new split rule
+      // 2. Check if a split rule with identical percentages already exists — reuse it if so
+      const existingRules = await getSplitRules(templateId)
+      let resolvedRuleId: string | null = null
+
+      for (const rule of existingRules) {
+        const allocations = await getAllocations(rule.id)
+        const matches = participants.every((p) => {
+          const existing = allocations.find((a) => a.templateParticipantId === p.id)?.percent ?? 0
+          return Math.abs(existing - wantedPercents[p.id]) < 0.01
+        })
+        if (matches) { resolvedRuleId = rule.id; break }
+      }
+
+      // 3. If no matching rule found, create a new one named by its percentages
+      if (!resolvedRuleId) {
+        const pctLabel = participants.map((p) => `${Math.round(wantedPercents[p.id])}%`).join(" / ")
+        const rule = await createSplitRule(templateId, pctLabel)
+        for (const p of participants) {
+          await createAllocation(rule.id, p.id, wantedPercents[p.id])
+        }
+        resolvedRuleId = rule.id
+      }
+
+      // 4. Create the field, linking it to the resolved split rule
       await createField(
         templateId,
         draft.label.trim(),
         draft.fieldType,
         fields.length + 1,
-        rule.id,
+        resolvedRuleId,
         draft.defaultAmount ? parseFloat(draft.defaultAmount) : undefined,
         draft.defaultPayerParticipantId || undefined
       )
