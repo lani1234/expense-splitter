@@ -3,13 +3,6 @@ import { Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { createField, createSplitRule, createAllocation, getParticipants, getSplitRules, getAllocations } from "@/api/templates"
 import { useFields, TEMPLATE_KEYS } from "@/hooks/useTemplates"
@@ -175,18 +168,21 @@ export default function WizardStep3({ templateId, onFinish, onBack }: Props) {
           </div>
           <div className="space-y-1.5">
             <Label className="text-xs">Type</Label>
-            <Select
-              value={draft.fieldType}
-              onValueChange={(v) => setDraft((d) => ({ ...d, fieldType: v as FieldType }))}
-            >
-              <SelectTrigger className="bg-background border-border h-8 text-sm">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="bg-surface border-border">
-                <SelectItem value="SINGLE">Single</SelectItem>
-                <SelectItem value="MULTIPLE">Multiple</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="flex gap-3 h-8 items-center">
+              {(["SINGLE", "MULTIPLE"] as FieldType[]).map((type) => (
+                <label key={type} className="flex items-center gap-1.5 text-sm cursor-pointer">
+                  <input
+                    type="radio"
+                    name="fieldType-wizard"
+                    value={type}
+                    checked={draft.fieldType === type}
+                    onChange={() => setDraft((d) => ({ ...d, fieldType: type }))}
+                    className="accent-primary"
+                  />
+                  {type.charAt(0) + type.slice(1).toLowerCase()}
+                </label>
+              ))}
+            </div>
           </div>
           <div className="space-y-1.5">
             <Label className="text-xs">Default Amount</Label>

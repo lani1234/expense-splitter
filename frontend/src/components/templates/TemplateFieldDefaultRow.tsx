@@ -2,8 +2,10 @@ import { useState, useEffect } from "react"
 import { Pencil, Check, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { useUpdateField } from "@/hooks/useTemplates"
-import type { TemplateField, TemplateParticipant, SplitRule, SplitRuleAllocation } from "@/types"
+import { useUpdateField, TEMPLATE_KEYS } from "@/hooks/useTemplates"
+import { createSplitRule, createAllocation } from "@/api/templates"
+import { useQueryClient } from "@tanstack/react-query"
+import type { TemplateField, TemplateParticipant, SplitRule, SplitRuleAllocation, FieldType } from "@/types"
 import { useToast } from "@/hooks/use-toast"
 
 interface Props {
@@ -28,51 +30,117 @@ function formatSplitLabel(
   return pcts.length ? pcts.join(" / ") : "—"
 }
 
+function percentsFromAllocations(
+  splitRuleId: string | undefined,
+  allAllocations: Record<string, SplitRuleAllocation[]>,
+  participants: TemplateParticipant[]
+): Record<string, string> {
+  const allocations = allAllocations[splitRuleId ?? ""] ?? []
+  return Object.fromEntries(
+    participants.map((p) => {
+      const alloc = allocations.find((a) => a.templateParticipantId === p.id)
+      return [p.id, alloc != null ? String(alloc.percent) : ""]
+    })
+  )
+}
+
 export default function TemplateFieldDefaultRow({ field, participants, splitRules, allAllocations, templateId }: Props) {
   const { toast } = useToast()
+  const qc = useQueryClient()
   const updateField = useUpdateField(templateId)
 
   const defaultSplitRule = splitRules.find((r) => r.id === field.defaultSplitRuleId)
   const defaultPayer = participants.find((p) => p.id === field.defaultPayerParticipantId)
 
   const [editing, setEditing] = useState(false)
+  const [label, setLabel] = useState(field.label)
   const [amount, setAmount] = useState(field.defaultAmount != null ? String(field.defaultAmount) : "")
-  const [splitRuleId, setSplitRuleId] = useState(field.defaultSplitRuleId ?? "")
+  const [percents, setPercents] = useState<Record<string, string>>(() =>
+    percentsFromAllocations(field.defaultSplitRuleId, allAllocations, participants)
+  )
   const [payerParticipantId, setPayerParticipantId] = useState(field.defaultPayerParticipantId ?? "")
+  const [fieldType, setFieldType] = useState<FieldType>(field.fieldType)
   const [saving, setSaving] = useState(false)
 
-  // Sync local state when server data updates (e.g. after a save)
+  // Sync local state when server data updates (after a save or when allAllocations loads)
   useEffect(() => {
     if (!editing) {
+      setLabel(field.label)
       setAmount(field.defaultAmount != null ? String(field.defaultAmount) : "")
-      setSplitRuleId(field.defaultSplitRuleId ?? "")
+      setPercents(percentsFromAllocations(field.defaultSplitRuleId, allAllocations, participants))
       setPayerParticipantId(field.defaultPayerParticipantId ?? "")
+      setFieldType(field.fieldType)
     }
-  }, [field.defaultAmount, field.defaultSplitRuleId, field.defaultPayerParticipantId, editing])
+  }, [field.label, field.defaultAmount, field.defaultSplitRuleId, field.defaultPayerParticipantId, field.fieldType, allAllocations, editing])
+
+  const percentTotal = participants.reduce((sum, p) => sum + (parseFloat(percents[p.id] ?? "") || 0), 0)
+  const allPercentsEmpty = participants.every((p) => !(parseFloat(percents[p.id] ?? "") > 0))
+  const percentsValid = allPercentsEmpty || Math.abs(percentTotal - 100) < 0.01
 
   const handleSave = async () => {
+    if (!label.trim()) {
+      toast({ title: "Label is required", variant: "destructive" })
+      return
+    }
     const parsedAmount = amount.trim() === "" ? null : parseFloat(amount)
     if (parsedAmount !== null && (isNaN(parsedAmount) || parsedAmount < 0)) {
       toast({ title: "Invalid amount", variant: "destructive" })
       return
     }
+    if (!percentsValid) {
+      toast({ title: `Split must sum to 100% (currently ${percentTotal.toFixed(1)}%)`, variant: "destructive" })
+      return
+    }
 
     setSaving(true)
     try {
-      const params: Parameters<typeof updateField.mutateAsync>[0] = { fieldId: field.id }
+      const params: Parameters<typeof updateField.mutateAsync>[0] = { fieldId: field.id, label: label.trim(), fieldType }
 
+      // Amount
       if (parsedAmount === null && field.defaultAmount != null) {
         params.clearDefaultAmount = true
       } else if (parsedAmount !== null) {
         params.defaultAmount = parsedAmount
       }
 
-      if (splitRuleId === "" && field.defaultSplitRuleId) {
-        params.clearDefaultSplitRule = true
-      } else if (splitRuleId !== "") {
-        params.defaultSplitRuleId = splitRuleId
+      // Split rule — find/create based on percentages
+      if (allPercentsEmpty) {
+        if (field.defaultSplitRuleId) params.clearDefaultSplitRule = true
+      } else {
+        const wantedPercents: Record<string, number> = {}
+        for (const p of participants) {
+          wantedPercents[p.id] = parseFloat(percents[p.id] ?? "") || 0
+        }
+
+        // Check existing rules for a match (only rules that cover ALL current participants)
+        let resolvedRuleId: string | null = null
+        for (const rule of splitRules) {
+          const allocations = allAllocations[rule.id] ?? []
+          const coversAll = participants.every((p) => allocations.some((a) => a.templateParticipantId === p.id))
+          if (!coversAll) continue
+          const matches = participants.every((p) => {
+            const existing = allocations.find((a) => a.templateParticipantId === p.id)?.percent ?? 0
+            return Math.abs(existing - wantedPercents[p.id]) < 0.01
+          })
+          if (matches) { resolvedRuleId = rule.id; break }
+        }
+
+        // Create a new rule if no match found
+        if (!resolvedRuleId) {
+          const pctLabel = participants.map((p) => `${Math.round(wantedPercents[p.id])}%`).join(" / ")
+          const rule = await createSplitRule(templateId, pctLabel)
+          for (const p of participants) {
+            await createAllocation(rule.id, p.id, wantedPercents[p.id])
+          }
+          resolvedRuleId = rule.id
+          qc.invalidateQueries({ queryKey: TEMPLATE_KEYS.splitRules(templateId) })
+          qc.invalidateQueries({ queryKey: TEMPLATE_KEYS.allocations(resolvedRuleId) })
+        }
+
+        params.defaultSplitRuleId = resolvedRuleId
       }
 
+      // Payer
       if (payerParticipantId === "" && field.defaultPayerParticipantId) {
         params.clearDefaultPayer = true
       } else if (payerParticipantId !== "") {
@@ -93,15 +161,50 @@ export default function TemplateFieldDefaultRow({ field, participants, splitRule
   }
 
   const handleCancel = () => {
+    setLabel(field.label)
     setAmount(field.defaultAmount != null ? String(field.defaultAmount) : "")
-    setSplitRuleId(field.defaultSplitRuleId ?? "")
+    setPercents(percentsFromAllocations(field.defaultSplitRuleId, allAllocations, participants))
     setPayerParticipantId(field.defaultPayerParticipantId ?? "")
+    setFieldType(field.fieldType)
     setEditing(false)
   }
 
   if (editing) {
     return (
       <div className="rounded-lg bg-surface-elevated p-3 space-y-3 border border-primary/30">
+        {/* Label + Type */}
+        <div className="grid grid-cols-3 gap-3">
+          <div className="col-span-2">
+            <label className="text-xs text-muted-foreground mb-1 block">Label *</label>
+            <Input
+              placeholder="e.g. Cable Bill"
+              value={label}
+              onChange={(e) => setLabel(e.target.value)}
+              className="bg-background border-border h-8 text-sm"
+              autoFocus
+            />
+          </div>
+          <div>
+            <label className="text-xs text-muted-foreground mb-1 block">Type</label>
+            <div className="flex gap-3 h-8 items-center">
+              {(["SINGLE", "MULTIPLE"] as FieldType[]).map((type) => (
+                <label key={type} className="flex items-center gap-1.5 text-sm cursor-pointer">
+                  <input
+                    type="radio"
+                    name={`fieldType-edit-${field.id}`}
+                    value={type}
+                    checked={fieldType === type}
+                    onChange={() => setFieldType(type)}
+                    className="accent-primary"
+                  />
+                  {type.charAt(0) + type.slice(1).toLowerCase()}
+                </label>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Default Amount + Default Payer */}
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="text-xs text-muted-foreground mb-1 block">Default Amount</label>
@@ -115,43 +218,68 @@ export default function TemplateFieldDefaultRow({ field, participants, splitRule
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 className="bg-background border-border pl-6 h-8 text-sm"
-                autoFocus
               />
             </div>
           </div>
           <div>
-            <label className="text-xs text-muted-foreground mb-1 block">Default Split Rule</label>
+            <label className="text-xs text-muted-foreground mb-1 block">Default Payer</label>
             <select
-              value={splitRuleId}
-              onChange={(e) => setSplitRuleId(e.target.value)}
+              value={payerParticipantId}
+              onChange={(e) => setPayerParticipantId(e.target.value)}
               className="h-8 text-sm w-full rounded-md border border-border bg-background px-2"
             >
-              <option value="">— none —</option>
-              {splitRules.map((r) => (
-                <option key={r.id} value={r.id}>{formatSplitLabel(r.id, allAllocations, participants)}</option>
+              <option value="">— not tracked —</option>
+              {participants.map((p) => (
+                <option key={p.id} value={p.id}>{p.name}</option>
               ))}
             </select>
           </div>
         </div>
-        <div>
-          <label className="text-xs text-muted-foreground mb-1 block">Default Payer</label>
-          <select
-            value={payerParticipantId}
-            onChange={(e) => setPayerParticipantId(e.target.value)}
-            className="h-8 text-sm w-full rounded-md border border-border bg-background px-2"
-          >
-            <option value="">— not tracked —</option>
-            {participants.map((p) => (
-              <option key={p.id} value={p.id}>{p.name}</option>
-            ))}
-          </select>
+
+        {/* Split percentages */}
+        <div className="space-y-2">
+          <label className="text-xs text-muted-foreground block">Split</label>
+          {participants.map((p) => (
+            <div key={p.id} className="flex items-center gap-2">
+              <span className="w-24 text-sm text-muted-foreground truncate">{p.name}</span>
+              <Input
+                type="number"
+                min="0"
+                max="100"
+                step="0.1"
+                placeholder="0"
+                value={percents[p.id] ?? ""}
+                onChange={(e) => {
+                  const val = e.target.value
+                  setPercents((prev) => {
+                    const next = { ...prev, [p.id]: val }
+                    if (participants.length === 2) {
+                      const other = participants.find((o) => o.id !== p.id)!
+                      const remainder = 100 - (parseFloat(val) || 0)
+                      next[other.id] = remainder > 0 ? String(Math.round(remainder * 10) / 10) : "0"
+                    }
+                    return next
+                  })
+                }}
+                className="w-20 bg-background border-border h-8 text-sm"
+              />
+              <span className="text-sm text-muted-foreground">%</span>
+            </div>
+          ))}
+          <p className={`text-xs font-medium ${percentsValid ? "text-primary" : "text-muted-foreground"}`}>
+            {allPercentsEmpty
+              ? "No split defined"
+              : `Total: ${percentTotal.toFixed(1)}%${percentsValid ? " ✓" : participants.length >= 3 ? ` · ${(100 - percentTotal).toFixed(1)}% remaining` : " (need 100%)"}`
+            }
+          </p>
         </div>
+
         <div className="flex justify-end gap-2">
           <Button variant="ghost" size="sm" onClick={handleCancel} className="h-7">
             <X className="h-3.5 w-3.5 mr-1" />
             Cancel
           </Button>
-          <Button size="sm" onClick={handleSave} disabled={saving} className="h-7">
+          <Button size="sm" onClick={handleSave} disabled={saving || !label.trim() || !percentsValid} className="h-7">
             <Check className="h-3.5 w-3.5 mr-1" />
             {saving ? "Saving..." : "Save"}
           </Button>

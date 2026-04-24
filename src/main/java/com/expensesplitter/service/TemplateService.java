@@ -275,7 +275,7 @@ public class TemplateService {
         return fieldRepository.save(field);
     }
 
-    public TemplateField updateField(UUID fieldId, String label, BigDecimal defaultAmount,
+    public TemplateField updateField(UUID fieldId, String label, String fieldType, BigDecimal defaultAmount,
                                      UUID defaultSplitRuleId, UUID defaultPayerParticipantId,
                                      boolean clearDefaultAmount, boolean clearDefaultSplitRule,
                                      boolean clearDefaultPayer) {
@@ -283,6 +283,9 @@ public class TemplateService {
         if (label != null && !label.isBlank()) {
             if (label.length() > 255) throw new ValidationException("Field label cannot exceed 255 characters");
             field.setLabel(label.trim());
+        }
+        if (fieldType != null && !fieldType.isBlank()) {
+            field.setFieldType(com.expensesplitter.enums.FieldType.valueOf(fieldType));
         }
         if (clearDefaultAmount) {
             field.setDefaultAmount(null);

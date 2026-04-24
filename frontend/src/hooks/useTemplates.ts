@@ -71,6 +71,15 @@ export function useUpdateTemplate() {
   })
 }
 
+export function useAddParticipant(templateId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ name, displayOrder }: { name: string; displayOrder: number }) =>
+      api.createParticipant(templateId, name, displayOrder),
+    onSuccess: () => qc.invalidateQueries({ queryKey: TEMPLATE_KEYS.participants(templateId) }),
+  })
+}
+
 export function useRenameParticipant(templateId: string) {
   const qc = useQueryClient()
   return useMutation({
@@ -95,6 +104,7 @@ export function useUpdateField(templateId: string) {
     mutationFn: ({ fieldId, ...params }: {
       fieldId: string
       label?: string
+      fieldType?: string
       defaultAmount?: number
       defaultSplitRuleId?: string
       defaultPayerParticipantId?: string
@@ -120,5 +130,13 @@ export function useDeleteTemplate() {
   return useMutation({
     mutationFn: (id: string) => api.deleteTemplate(id),
     onSuccess: () => qc.invalidateQueries({ queryKey: TEMPLATE_KEYS.byUser() }),
+  })
+}
+
+export function useDeleteField(templateId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (fieldId: string) => api.deleteField(fieldId),
+    onSuccess: () => qc.invalidateQueries({ queryKey: TEMPLATE_KEYS.fields(templateId) }),
   })
 }

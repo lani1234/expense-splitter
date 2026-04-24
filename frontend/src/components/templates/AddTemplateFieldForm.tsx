@@ -115,14 +115,21 @@ export default function AddTemplateFieldForm({ templateId, participants, fieldCo
         </div>
         <div className="space-y-1.5">
           <label className="text-xs text-muted-foreground">Type</label>
-          <select
-            value={fieldType}
-            onChange={(e) => setFieldType(e.target.value as FieldType)}
-            className="h-8 text-sm w-full rounded-md border border-border bg-background px-2"
-          >
-            <option value="SINGLE">Single</option>
-            <option value="MULTIPLE">Multiple</option>
-          </select>
+          <div className="flex gap-3 h-8 items-center">
+            {(["SINGLE", "MULTIPLE"] as FieldType[]).map((type) => (
+              <label key={type} className="flex items-center gap-1.5 text-sm cursor-pointer">
+                <input
+                  type="radio"
+                  name="fieldType-add"
+                  value={type}
+                  checked={fieldType === type}
+                  onChange={() => setFieldType(type)}
+                  className="accent-primary"
+                />
+                {type.charAt(0) + type.slice(1).toLowerCase()}
+              </label>
+            ))}
+          </div>
         </div>
       </div>
 

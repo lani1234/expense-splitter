@@ -5,6 +5,7 @@ import { ArrowLeft, Pencil, Check, X, Trash2, Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
+
 import EditableRow from "@/components/templates/EditableRow"
 import TemplateFieldSection from "@/components/templates/TemplateFieldSection"
 import AddTemplateFieldForm from "@/components/templates/AddTemplateFieldForm"
@@ -14,6 +15,7 @@ import {
   useFields,
   useSplitRules,
   useUpdateTemplate,
+  useAddParticipant,
   useRenameParticipant,
   useDeleteTemplate,
   TEMPLATE_KEYS,
@@ -45,12 +47,14 @@ export default function TemplateDetailPage() {
   })
 
   const updateTemplate = useUpdateTemplate()
+  const addParticipant = useAddParticipant(templateId!)
   const renameParticipant = useRenameParticipant(templateId!)
   const { mutate: deleteTemplate } = useDeleteTemplate()
 
   const [editingName, setEditingName] = useState(false)
   const [nameInput, setNameInput] = useState("")
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [newParticipantName, setNewParticipantName] = useState("")
   const [addingField, setAddingField] = useState(false)
 
   if (templateLoading || participantsLoading || fieldsLoading) {
@@ -176,17 +180,44 @@ export default function TemplateDetailPage() {
       <div className="space-y-2">
         <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Participants</p>
         <div className="rounded-lg border border-border bg-surface shadow-sm px-3 py-2 space-y-0.5">
-          {sortedParticipants.length === 0 ? (
-            <p className="text-sm text-muted-foreground italic">No participants</p>
-          ) : (
-            sortedParticipants.map((p) => (
-              <EditableRow
-                key={p.id}
-                label={p.name}
-                onSave={(name) => renameParticipant.mutateAsync({ participantId: p.id, name })}
-              />
-            ))
-          )}
+          {sortedParticipants.map((p) => (
+            <EditableRow
+              key={p.id}
+              label={p.name}
+              onSave={(name) => renameParticipant.mutateAsync({ participantId: p.id, name })}
+            />
+          ))}
+          {/* Inline add participant */}
+          <div className="flex items-center gap-2 pt-1">
+            <Input
+              placeholder="Add participant…"
+              value={newParticipantName}
+              onChange={(e) => setNewParticipantName(e.target.value)}
+              onKeyDown={async (e) => {
+                if (e.key === "Enter") {
+                  const name = newParticipantName.trim()
+                  if (!name) return
+                  await addParticipant.mutateAsync({ name, displayOrder: sortedParticipants.length + 1 })
+                  setNewParticipantName("")
+                }
+              }}
+              className="h-7 text-sm bg-background border-border flex-1"
+            />
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 shrink-0"
+              disabled={!newParticipantName.trim() || addParticipant.isPending}
+              onClick={async () => {
+                const name = newParticipantName.trim()
+                if (!name) return
+                await addParticipant.mutateAsync({ name, displayOrder: sortedParticipants.length + 1 })
+                setNewParticipantName("")
+              }}
+            >
+              <Plus className="h-3.5 w-3.5" />
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -208,7 +239,11 @@ export default function TemplateDetailPage() {
             templateId={templateId!}
           />
         ))}
-        {addingField ? (
+        {sortedParticipants.length === 0 ? (
+          <p className="text-xs text-muted-foreground italic px-1">
+            Add at least one participant before adding fields.
+          </p>
+        ) : addingField ? (
           <AddTemplateFieldForm
             templateId={templateId!}
             participants={sortedParticipants}

@@ -112,6 +112,7 @@ export const updateField = (
   fieldId: string,
   params: {
     label?: string
+    fieldType?: string
     defaultAmount?: number
     defaultSplitRuleId?: string
     defaultPayerParticipantId?: string

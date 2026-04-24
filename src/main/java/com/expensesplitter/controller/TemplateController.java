@@ -175,6 +175,7 @@ public class TemplateController {
     public ResponseEntity<ApiResponse<TemplateFieldResponse>> updateField(
             @PathVariable UUID fieldId,
             @RequestParam(required = false) String label,
+            @RequestParam(required = false) String fieldType,
             @RequestParam(required = false) BigDecimal defaultAmount,
             @RequestParam(required = false) UUID defaultSplitRuleId,
             @RequestParam(required = false) UUID defaultPayerParticipantId,
@@ -182,7 +183,7 @@ public class TemplateController {
             @RequestParam(defaultValue = "false") boolean clearDefaultSplitRule,
             @RequestParam(defaultValue = "false") boolean clearDefaultPayer) {
         TemplateFieldResponse resp = TemplateFieldResponse.from(
-                templateService.updateField(fieldId, label, defaultAmount, defaultSplitRuleId, defaultPayerParticipantId,
+                templateService.updateField(fieldId, label, fieldType, defaultAmount, defaultSplitRuleId, defaultPayerParticipantId,
                         clearDefaultAmount, clearDefaultSplitRule, clearDefaultPayer));
         return ResponseEntity.ok(new ApiResponse<>(true, resp, "Field updated successfully"));
     }
