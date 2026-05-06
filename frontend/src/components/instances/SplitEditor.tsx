@@ -110,8 +110,8 @@ export default function SplitEditor({
   return (
     <div className="space-y-1">
       <p className="text-xs text-muted-foreground mb-1">Split</p>
-      {/* Template Default */}
-      <button
+      {/* Template Default — only shown when field has a default split rule */}
+      {defaultSplitRuleId && <button
         type="button"
         onClick={() => onSplitModeChange("TEMPLATE_FIELD_PERCENT_SPLIT")}
         className={`flex items-center gap-2 w-full rounded-md px-2 py-1.5 text-left transition-colors ${
@@ -122,7 +122,7 @@ export default function SplitEditor({
       >
         <RadioDot selected={currentSplitMode === "TEMPLATE_FIELD_PERCENT_SPLIT"} />
         <span className="text-sm">{templateDefaultLabel}</span>
-      </button>
+      </button>}
 
       {/* Custom Percentage Split */}
       <button
