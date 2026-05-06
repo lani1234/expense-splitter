@@ -40,12 +40,22 @@ export default function SplitEditor({
   const { data: defaultAllocations = [] } = useAllocations(defaultSplitRuleId ?? "")
 
   const templateDefaultLabel = useMemo(() => {
-    if (!defaultAllocations.length) return "Template Default"
-    const pcts = participants
-      .map((p) => defaultAllocations.find((a) => a.templateParticipantId === p.id))
-      .filter(Boolean)
-      .map((a) => `${Math.round(a!.percent)}%`)
-    return pcts.length ? `Template Default (${pcts.join(" / ")})` : "Template Default"
+    if (defaultAllocations.length && participants.length) {
+      const pcts = participants
+        .map((p) => defaultAllocations.find((a) => a.templateParticipantId === p.id))
+        .filter(Boolean)
+        .map((a) => `${Math.round(a!.percent)}%`)
+      if (pcts.length) return pcts.join(" / ")
+    }
+    if (participants.length) {
+      const equal = Math.round(100 / participants.length)
+      return participants.map((_, i) =>
+        i === participants.length - 1
+          ? `${100 - equal * (participants.length - 1)}%`
+          : `${equal}%`
+      ).join(" / ")
+    }
+    return "—"
   }, [defaultAllocations, participants])
 
   const [manuallySet, setManuallySet] = useState<Set<string>>(new Set())
@@ -99,6 +109,7 @@ export default function SplitEditor({
 
   return (
     <div className="space-y-1">
+      <p className="text-xs text-muted-foreground mb-1">Split</p>
       {/* Template Default */}
       <button
         type="button"

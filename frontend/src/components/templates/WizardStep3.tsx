@@ -57,7 +57,7 @@ export default function WizardStep3({ templateId, onFinish, onBack }: Props) {
       setError("Label is required")
       return
     }
-    if (!percentsValid) {
+    if (draft.fieldType === "SINGLE" && !percentsValid) {
       setError(`Percentages must sum to 100 (currently ${percentTotal.toFixed(1)})`)
       return
     }
@@ -65,44 +65,47 @@ export default function WizardStep3({ templateId, onFinish, onBack }: Props) {
     setLoading(true)
     setError("")
     try {
-      // 1. Build the desired percentages for each participant
-      const wantedPercents: Record<string, number> = {}
-      for (const p of participants) {
-        wantedPercents[p.id] = parseFloat(draft.percents[p.id] ?? "0") || 0
-      }
-
-      // 2. Check if a split rule with identical percentages already exists — reuse it if so
-      const existingRules = await getSplitRules(templateId)
       let resolvedRuleId: string | null = null
 
-      for (const rule of existingRules) {
-        const allocations = await getAllocations(rule.id)
-        const matches = participants.every((p) => {
-          const existing = allocations.find((a) => a.templateParticipantId === p.id)?.percent ?? 0
-          return Math.abs(existing - wantedPercents[p.id]) < 0.01
-        })
-        if (matches) { resolvedRuleId = rule.id; break }
-      }
-
-      // 3. If no matching rule found, create a new one named by its percentages
-      if (!resolvedRuleId) {
-        const pctLabel = participants.map((p) => `${Math.round(wantedPercents[p.id])}%`).join(" / ")
-        const rule = await createSplitRule(templateId, pctLabel)
+      if (draft.fieldType === "SINGLE") {
+        // 1. Build the desired percentages for each participant
+        const wantedPercents: Record<string, number> = {}
         for (const p of participants) {
-          await createAllocation(rule.id, p.id, wantedPercents[p.id])
+          wantedPercents[p.id] = parseFloat(draft.percents[p.id] ?? "0") || 0
         }
-        resolvedRuleId = rule.id
+
+        // 2. Check if a split rule with identical percentages already exists — reuse it if so
+        const existingRules = await getSplitRules(templateId)
+
+        for (const rule of existingRules) {
+          const allocations = await getAllocations(rule.id)
+          const matches = participants.every((p) => {
+            const existing = allocations.find((a) => a.templateParticipantId === p.id)?.percent ?? 0
+            return Math.abs(existing - wantedPercents[p.id]) < 0.01
+          })
+          if (matches) { resolvedRuleId = rule.id; break }
+        }
+
+        // 3. If no matching rule found, create a new one named by its percentages
+        if (!resolvedRuleId) {
+          const pctLabel = participants.map((p) => `${Math.round(wantedPercents[p.id])}%`).join(" / ")
+          const rule = await createSplitRule(templateId, pctLabel)
+          for (const p of participants) {
+            await createAllocation(rule.id, p.id, wantedPercents[p.id])
+          }
+          resolvedRuleId = rule.id
+        }
       }
 
-      // 4. Create the field, linking it to the resolved split rule
+      // 4. Create the field
       await createField(
         templateId,
         draft.label.trim(),
         draft.fieldType,
         fields.length + 1,
-        resolvedRuleId,
-        draft.defaultAmount ? parseFloat(draft.defaultAmount) : undefined,
-        draft.defaultPayerParticipantId || undefined
+        resolvedRuleId ?? undefined,
+        draft.fieldType === "SINGLE" && draft.defaultAmount ? parseFloat(draft.defaultAmount) : undefined,
+        draft.fieldType === "SINGLE" ? draft.defaultPayerParticipantId || undefined : undefined
       )
 
       qc.invalidateQueries({ queryKey: TEMPLATE_KEYS.fields(templateId) })
@@ -184,78 +187,84 @@ export default function WizardStep3({ templateId, onFinish, onBack }: Props) {
               ))}
             </div>
           </div>
-          <div className="space-y-1.5">
-            <Label className="text-xs">Default Amount</Label>
-            <div className="relative">
-              <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">$</span>
-              <Input
-                type="number"
-                min="0"
-                step="0.01"
-                placeholder="0.00"
-                value={draft.defaultAmount}
-                onChange={(e) => setDraft((d) => ({ ...d, defaultAmount: e.target.value }))}
-                className="bg-background border-border h-8 text-sm pl-6"
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Default Payer */}
-        <div className="space-y-1.5">
-          <Label className="text-xs">Default Payer</Label>
-          <select
-            value={draft.defaultPayerParticipantId}
-            onChange={(e) => setDraft((d) => ({ ...d, defaultPayerParticipantId: e.target.value }))}
-            className="h-8 text-sm w-full rounded-md border border-border bg-background px-2"
-          >
-            <option value="">— not set —</option>
-            {participants.map((p) => (
-              <option key={p.id} value={p.id}>{p.name}</option>
-            ))}
-          </select>
-        </div>
-
-        {/* Split section — always visible, required */}
-        <div className="space-y-2">
-          <Label className="text-xs">Split *</Label>
-          <div className="space-y-2">
-            {participants.map((p) => (
-              <div key={p.id} className="flex items-center gap-2">
-                <span className="w-24 text-sm text-muted-foreground truncate">{p.name}</span>
+          {draft.fieldType === "SINGLE" && (
+            <div className="space-y-1.5">
+              <Label className="text-xs">Default Amount</Label>
+              <div className="relative">
+                <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">$</span>
                 <Input
                   type="number"
                   min="0"
-                  max="100"
-                  step="0.1"
-                  placeholder="0"
-                  value={draft.percents[p.id] ?? ""}
-                  onChange={(e) => {
-                    const val = e.target.value
-                    setDraft((d) => {
-                      const newPercents = { ...d.percents, [p.id]: val }
-                      if (participants.length === 2) {
-                        const other = participants.find((other) => other.id !== p.id)!
-                        const remainder = 100 - (parseFloat(val) || 0)
-                        newPercents[other.id] = remainder > 0 ? String(Math.round(remainder * 10) / 10) : "0"
-                      }
-                      return { ...d, percents: newPercents }
-                    })
-                  }}
-                  className="w-20 bg-background border-border h-8 text-sm"
+                  step="0.01"
+                  placeholder="0.00"
+                  value={draft.defaultAmount}
+                  onChange={(e) => setDraft((d) => ({ ...d, defaultAmount: e.target.value }))}
+                  className="bg-background border-border h-8 text-sm pl-6"
                 />
-                <span className="text-sm text-muted-foreground">%</span>
               </div>
-            ))}
-          </div>
-          <p
-            className={`text-xs font-medium ${
-              percentsValid ? "text-primary" : "text-muted-foreground"
-            }`}
-          >
-            Total: {percentTotal.toFixed(1)}%{percentsValid ? " ✓" : participants.length >= 3 ? ` · ${(100 - percentTotal).toFixed(1)}% remaining` : ` (need 100%)`}
-          </p>
+            </div>
+          )}
         </div>
+
+        {/* Default Payer — hidden for MULTIPLE fields */}
+        {draft.fieldType === "SINGLE" && (
+          <div className="space-y-1.5">
+            <Label className="text-xs">Default Payer</Label>
+            <select
+              value={draft.defaultPayerParticipantId}
+              onChange={(e) => setDraft((d) => ({ ...d, defaultPayerParticipantId: e.target.value }))}
+              className="h-8 text-sm w-full rounded-md border border-border bg-background px-2"
+            >
+              <option value="">— not set —</option>
+              {participants.map((p) => (
+                <option key={p.id} value={p.id}>{p.name}</option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        {/* Split — hidden for MULTIPLE fields */}
+        {draft.fieldType === "SINGLE" && (
+          <div className="space-y-2">
+            <Label className="text-xs">Split *</Label>
+            <div className="space-y-2">
+              {participants.map((p) => (
+                <div key={p.id} className="flex items-center gap-2">
+                  <span className="w-24 text-sm text-muted-foreground truncate">{p.name}</span>
+                  <Input
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="0.1"
+                    placeholder="0"
+                    value={draft.percents[p.id] ?? ""}
+                    onChange={(e) => {
+                      const val = e.target.value
+                      setDraft((d) => {
+                        const newPercents = { ...d.percents, [p.id]: val }
+                        if (participants.length === 2) {
+                          const other = participants.find((other) => other.id !== p.id)!
+                          const remainder = 100 - (parseFloat(val) || 0)
+                          newPercents[other.id] = remainder > 0 ? String(Math.round(remainder * 10) / 10) : "0"
+                        }
+                        return { ...d, percents: newPercents }
+                      })
+                    }}
+                    className="w-20 bg-background border-border h-8 text-sm"
+                  />
+                  <span className="text-sm text-muted-foreground">%</span>
+                </div>
+              ))}
+            </div>
+            <p
+              className={`text-xs font-medium ${
+                percentsValid ? "text-primary" : "text-muted-foreground"
+              }`}
+            >
+              Total: {percentTotal.toFixed(1)}%{percentsValid ? " ✓" : participants.length >= 3 ? ` · ${(100 - percentTotal).toFixed(1)}% remaining` : ` (need 100%)`}
+            </p>
+          </div>
+        )}
 
         {error && <p className="text-xs text-destructive">{error}</p>}
 
@@ -264,7 +273,7 @@ export default function WizardStep3({ templateId, onFinish, onBack }: Props) {
           size="sm"
           className="w-full"
           onClick={addField}
-          disabled={loading || !draft.label.trim() || !percentsValid}
+          disabled={loading || !draft.label.trim() || (draft.fieldType === "SINGLE" && !percentsValid)}
         >
           <Plus className="h-3.5 w-3.5 mr-1" />
           {loading ? "Adding..." : "Add Field"}
