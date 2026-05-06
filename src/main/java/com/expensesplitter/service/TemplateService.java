@@ -275,6 +275,38 @@ public class TemplateService {
         return fieldRepository.save(field);
     }
 
+    public TemplateField updateField(UUID fieldId, String label, String fieldType, BigDecimal defaultAmount,
+                                     UUID defaultSplitRuleId, UUID defaultPayerParticipantId,
+                                     boolean clearDefaultAmount, boolean clearDefaultSplitRule,
+                                     boolean clearDefaultPayer) {
+        TemplateField field = getFieldById(fieldId);
+        if (label != null && !label.isBlank()) {
+            if (label.length() > 255) throw new ValidationException("Field label cannot exceed 255 characters");
+            field.setLabel(label.trim());
+        }
+        if (fieldType != null && !fieldType.isBlank()) {
+            field.setFieldType(com.expensesplitter.enums.FieldType.valueOf(fieldType));
+        }
+        if (clearDefaultAmount) {
+            field.setDefaultAmount(null);
+        } else if (defaultAmount != null) {
+            if (defaultAmount.compareTo(BigDecimal.ZERO) < 0)
+                throw new ValidationException("Default amount cannot be negative");
+            field.setDefaultAmount(defaultAmount);
+        }
+        if (clearDefaultSplitRule) {
+            field.setDefaultSplitRule(null);
+        } else if (defaultSplitRuleId != null) {
+            field.setDefaultSplitRule(getSplitRuleById(defaultSplitRuleId));
+        }
+        if (clearDefaultPayer) {
+            field.setDefaultPayerParticipant(null);
+        } else if (defaultPayerParticipantId != null) {
+            field.setDefaultPayerParticipant(getParticipantById(defaultPayerParticipantId));
+        }
+        return fieldRepository.save(field);
+    }
+
     public void deleteField(UUID fieldId) {
         fieldRepository.deleteById(fieldId);
     }

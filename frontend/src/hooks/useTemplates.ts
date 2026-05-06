@@ -64,7 +64,19 @@ export function useUpdateTemplate() {
   return useMutation({
     mutationFn: ({ id, name, description }: { id: string; name: string; description?: string }) =>
       api.updateTemplate(id, name, description),
-    onSuccess: () => qc.invalidateQueries({ queryKey: TEMPLATE_KEYS.byUser() }),
+    onSuccess: (_, { id }) => {
+      qc.invalidateQueries({ queryKey: TEMPLATE_KEYS.byUser() })
+      qc.invalidateQueries({ queryKey: TEMPLATE_KEYS.detail(id) })
+    },
+  })
+}
+
+export function useAddParticipant(templateId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ name, displayOrder }: { name: string; displayOrder: number }) =>
+      api.createParticipant(templateId, name, displayOrder),
+    onSuccess: () => qc.invalidateQueries({ queryKey: TEMPLATE_KEYS.participants(templateId) }),
   })
 }
 
@@ -86,6 +98,24 @@ export function useRenameField(templateId: string) {
   })
 }
 
+export function useUpdateField(templateId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ fieldId, ...params }: {
+      fieldId: string
+      label?: string
+      fieldType?: string
+      defaultAmount?: number
+      defaultSplitRuleId?: string
+      defaultPayerParticipantId?: string
+      clearDefaultAmount?: boolean
+      clearDefaultSplitRule?: boolean
+      clearDefaultPayer?: boolean
+    }) => api.updateField(fieldId, params),
+    onSuccess: () => qc.invalidateQueries({ queryKey: TEMPLATE_KEYS.fields(templateId) }),
+  })
+}
+
 export function useCreateTemplate() {
   const qc = useQueryClient()
   return useMutation({
@@ -100,5 +130,13 @@ export function useDeleteTemplate() {
   return useMutation({
     mutationFn: (id: string) => api.deleteTemplate(id),
     onSuccess: () => qc.invalidateQueries({ queryKey: TEMPLATE_KEYS.byUser() }),
+  })
+}
+
+export function useDeleteField(templateId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (fieldId: string) => api.deleteField(fieldId),
+    onSuccess: () => qc.invalidateQueries({ queryKey: TEMPLATE_KEYS.fields(templateId) }),
   })
 }

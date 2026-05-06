@@ -108,6 +108,23 @@ export const createField = (
     })
     .then((r) => r.data)
 
+export const updateField = (
+  fieldId: string,
+  params: {
+    label?: string
+    fieldType?: string
+    defaultAmount?: number
+    defaultSplitRuleId?: string
+    defaultPayerParticipantId?: string
+    clearDefaultAmount?: boolean
+    clearDefaultSplitRule?: boolean
+    clearDefaultPayer?: boolean
+  }
+) =>
+  client
+    .put<TemplateField>(`/templates/fields/${fieldId}`, null, { params })
+    .then((r) => r.data)
+
 export const renameField = (fieldId: string, label: string) =>
   client
     .put<TemplateField>(`/templates/fields/${fieldId}/label`, null, { params: { label } })

@@ -2,6 +2,7 @@ import { createBrowserRouter, RouterProvider, Navigate } from "react-router-dom"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import AppShell from "@/components/layout/AppShell"
 import TemplatesPage from "@/pages/TemplatesPage"
+import TemplateDetailPage from "@/pages/TemplateDetailPage"
 import InstancesPage from "@/pages/InstancesPage"
 import InstanceDetailPage from "@/pages/InstanceDetailPage"
 import SettledPage from "@/pages/SettledPage"
@@ -22,6 +23,7 @@ const router = createBrowserRouter([
     children: [
       { index: true, element: <Navigate to="/templates" replace /> },
       { path: "templates", element: <TemplatesPage /> },
+      { path: "templates/:templateId", element: <TemplateDetailPage /> },
       { path: "instances", element: <InstancesPage /> },
       { path: "instances/:id", element: <InstanceDetailPage /> },
       { path: "settled", element: <SettledPage /> },
