@@ -31,7 +31,9 @@ export default function FieldSection({
   const [showAdd, setShowAdd] = useState(false)
   const [newAmount, setNewAmount] = useState("")
   const [newNote, setNewNote] = useState("")
-  const [newSplitMode, setNewSplitMode] = useState<SplitMode>("TEMPLATE_FIELD_PERCENT_SPLIT")
+  const [newSplitMode, setNewSplitMode] = useState<SplitMode>(
+    field.defaultSplitRuleId ? "TEMPLATE_FIELD_PERCENT_SPLIT" : "FIELD_VALUE_CUSTOM_PERCENT"
+  )
   const [newFixedAmounts, setNewFixedAmounts] = useState<Record<string, number>>({})
   const [newCustomPercentages, setNewCustomPercentages] = useState<Record<string, number>>({})
   const [newPayerParticipantId, setNewPayerParticipantId] = useState("")
@@ -93,7 +95,7 @@ export default function FieldSection({
       setShowAdd(false)
       setNewAmount("")
       setNewNote("")
-      setNewSplitMode("TEMPLATE_FIELD_PERCENT_SPLIT")
+      setNewSplitMode(field.defaultSplitRuleId ? "TEMPLATE_FIELD_PERCENT_SPLIT" : "FIELD_VALUE_CUSTOM_PERCENT")
       setNewFixedAmounts({})
       setNewCustomPercentages({})
       setNewPayerParticipantId("")
