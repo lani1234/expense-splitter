@@ -42,10 +42,10 @@ export default function FieldValueRow({
   const { data: allocations = [] } = useAllocations(effectiveSplitRuleId ?? "")
 
   const PARTICIPANT_COLORS = [
-    { bg: "bg-blue-50 border-blue-200",       text: "text-blue-700"    },
-    { bg: "bg-violet-50 border-violet-200",   text: "text-violet-700"  },
-    { bg: "bg-emerald-50 border-emerald-200", text: "text-emerald-700" },
-    { bg: "bg-orange-50 border-orange-200",   text: "text-orange-700"  },
+    { bg: "bg-sky-500/20 border-sky-400/40",         text: "text-sky-300"     },
+    { bg: "bg-fuchsia-500/20 border-fuchsia-400/40", text: "text-fuchsia-300" },
+    { bg: "bg-emerald-500/20 border-emerald-400/40", text: "text-emerald-300" },
+    { bg: "bg-orange-500/20 border-orange-400/40",   text: "text-orange-300"  },
   ]
 
   const participantData = participantEntryAmounts.map((pea) => {
@@ -263,7 +263,7 @@ export default function FieldValueRow({
         {fieldValue.payerParticipantId && (() => {
           const payerName = participants.find((p) => p.id === fieldValue.payerParticipantId)?.name
           return payerName ? (
-            <span className="text-xs rounded-full border px-2.5 py-0.5 bg-slate-100 border-slate-300 text-slate-500 whitespace-nowrap shrink-0">
+            <span className="text-xs rounded-full border px-2.5 py-0.5 bg-white/10 border-white/20 text-muted-foreground whitespace-nowrap shrink-0">
               Paid by {payerName}
             </span>
           ) : null

@@ -70,7 +70,7 @@ export default function LoginPage() {
       <div className="w-full max-w-sm">
         <div className="flex flex-col items-center mb-8">
           <div className="bg-nav rounded-lg px-3 py-1.5 mb-2">
-            <h1 className="text-2xl font-bold"><span className="text-blue-300">we</span><span className="text-white">even</span></h1>
+            <h1 className="text-2xl font-bold"><span className="text-teal-400">we</span><span className="text-white">even</span></h1>
           </div>
           <p className="text-muted-foreground text-sm">Split expenses with ease</p>
         </div>

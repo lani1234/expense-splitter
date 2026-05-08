@@ -123,9 +123,9 @@ export default function FieldSection({
         {fieldValues.length === 0 ? (
           <p className="px-3 py-2 text-sm text-muted-foreground italic">No entries yet</p>
         ) : (
-          <div className="divide-y-2 divide-slate-200">
+          <div className="divide-y divide-border">
             {fieldValues.map((fv, i) => (
-              <div key={fv.id} className={i % 2 === 1 ? "bg-slate-100" : ""}>
+              <div key={fv.id} className={i % 2 === 1 ? "bg-white/[0.03]" : ""}>
                 <FieldValueRow
                   fieldValue={fv}
                   templateId={templateId}

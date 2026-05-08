@@ -14,7 +14,7 @@ export default function NavBar() {
   return (
     <header className="sticky top-0 z-50 bg-nav shadow-md">
       <div className="mx-auto flex h-14 max-w-3xl items-center gap-8 px-4">
-        <span className="text-xl font-bold"><span className="text-blue-300">we</span><span className="text-white">even</span></span>
+        <span className="text-xl font-bold"><span className="text-teal-400">we</span><span className="text-white">even</span></span>
         <nav className="flex items-center gap-1 flex-1">
           {links.map((link) => (
             <NavLink

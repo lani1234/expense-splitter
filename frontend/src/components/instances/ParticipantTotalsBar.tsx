@@ -2,10 +2,10 @@ import { useParticipants } from "@/hooks/useTemplates"
 import { useInstanceTotals } from "@/hooks/useFieldValues"
 
 const TILE_COLORS = [
-  { bg: "bg-blue-50 border-blue-200",       amount: "text-blue-600"    },
-  { bg: "bg-violet-50 border-violet-200",   amount: "text-violet-600"  },
-  { bg: "bg-emerald-50 border-emerald-200", amount: "text-emerald-600" },
-  { bg: "bg-orange-50 border-orange-200",   amount: "text-orange-600"  },
+  { bg: "bg-sky-500/20 border-sky-400/40",         amount: "text-sky-300"     },
+  { bg: "bg-fuchsia-500/20 border-fuchsia-400/40", amount: "text-fuchsia-300" },
+  { bg: "bg-emerald-500/20 border-emerald-400/40", amount: "text-emerald-300" },
+  { bg: "bg-orange-500/20 border-orange-400/40",   amount: "text-orange-300"  },
 ]
 
 interface Props {
@@ -25,9 +25,9 @@ export default function ParticipantTotalsBar({ instanceId, templateId, grandTota
   return (
     <div className="flex items-stretch gap-3 flex-wrap">
       {grandTotal !== undefined && (
-        <div className="flex flex-col justify-center rounded-xl border px-4 py-2 min-w-[110px] shadow-sm bg-slate-50 border-slate-200">
+        <div className="flex flex-col justify-center rounded-xl border px-4 py-2 min-w-[110px] shadow-sm bg-white/5 border-white/10">
           <span className="text-xs text-muted-foreground mb-1">Total</span>
-          <span className="text-lg font-bold text-slate-700">${grandTotal.toFixed(2)}</span>
+          <span className="text-lg font-bold text-foreground">${grandTotal.toFixed(2)}</span>
         </div>
       )}
       {participants.map((p, i) => {
@@ -61,7 +61,7 @@ export default function ParticipantTotalsBar({ instanceId, templateId, grandTota
                   <span className="text-muted-foreground font-medium">Net</span>
                   <span
                     className={`font-bold tabular-nums text-sm ${
-                      net <= 0 ? "text-emerald-600" : colors.amount
+                      net <= 0 ? "text-emerald-400" : colors.amount
                     }`}
                   >
                     {isLoading ? "—" : (net < 0 ? `-$${Math.abs(net).toFixed(2)}` : `$${net.toFixed(2)}`)}
