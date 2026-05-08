@@ -16,7 +16,7 @@ export default function TemplatesPage() {
 
   return (
     <div className="space-y-6">
-      {(isLoading || templates.length > 0) && (
+      {templates.length > 0 && (
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-foreground">Templates</h1>
