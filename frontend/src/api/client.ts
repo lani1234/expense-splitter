@@ -1,8 +1,15 @@
 import axios from "axios"
+import { getAccessToken } from "@/lib/auth"
 
 const client = axios.create({
   baseURL: import.meta.env.VITE_API_URL ?? "/api",
   headers: { "Content-Type": "application/json" },
+})
+
+client.interceptors.request.use(async (config) => {
+  const token = await getAccessToken()
+  if (token) config.headers.Authorization = `Bearer ${token}`
+  return config
 })
 
 // Unwrap ApiResponse<T> — throw if success=false

@@ -9,15 +9,15 @@ import type {
 } from "@/types"
 
 // Templates
-export const getTemplatesByUser = (userId: string) =>
-  client.get<Template[]>(`/templates/user/${userId}`).then((r) => r.data)
+export const getMyTemplates = () =>
+  client.get<Template[]>(`/templates/me`).then((r) => r.data)
 
 export const getTemplate = (id: string) =>
   client.get<Template>(`/templates/${id}`).then((r) => r.data)
 
-export const createTemplate = (userId: string, name: string, description?: string) =>
+export const createTemplate = (name: string, description?: string) =>
   client
-    .post<Template>(`/templates`, null, { params: { userId, name, description } })
+    .post<Template>(`/templates`, null, { params: { name, description } })
     .then((r) => r.data)
 
 export const updateTemplate = (id: string, name: string, description?: string) =>
