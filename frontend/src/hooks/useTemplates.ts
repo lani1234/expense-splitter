@@ -1,10 +1,10 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import * as api from "@/api/templates"
-import { CURRENT_USER_ID } from "@/config/constants"
+import { useAuth } from "@/context/AuthContext"
 
 export const TEMPLATE_KEYS = {
   all: ["templates"] as const,
-  byUser: () => ["templates", "user", CURRENT_USER_ID] as const,
+  byUser: (userId: string) => ["templates", "user", userId] as const,
   detail: (id: string) => ["templates", id] as const,
   participants: (templateId: string) => ["templates", templateId, "participants"] as const,
   splitRules: (templateId: string) => ["templates", templateId, "split-rules"] as const,
@@ -13,9 +13,11 @@ export const TEMPLATE_KEYS = {
 }
 
 export function useTemplates() {
+  const { user } = useAuth()
   return useQuery({
-    queryKey: TEMPLATE_KEYS.byUser(),
-    queryFn: () => api.getTemplatesByUser(CURRENT_USER_ID),
+    queryKey: TEMPLATE_KEYS.byUser(user?.sub ?? ""),
+    queryFn: () => api.getMyTemplates(),
+    enabled: !!user,
   })
 }
 
@@ -65,7 +67,7 @@ export function useUpdateTemplate() {
     mutationFn: ({ id, name, description }: { id: string; name: string; description?: string }) =>
       api.updateTemplate(id, name, description),
     onSuccess: (_, { id }) => {
-      qc.invalidateQueries({ queryKey: TEMPLATE_KEYS.byUser() })
+      qc.invalidateQueries({ queryKey: TEMPLATE_KEYS.all })
       qc.invalidateQueries({ queryKey: TEMPLATE_KEYS.detail(id) })
     },
   })
@@ -120,8 +122,8 @@ export function useCreateTemplate() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: ({ name, description }: { name: string; description?: string }) =>
-      api.createTemplate(CURRENT_USER_ID, name, description),
-    onSuccess: () => qc.invalidateQueries({ queryKey: TEMPLATE_KEYS.byUser() }),
+      api.createTemplate(name, description),
+    onSuccess: () => qc.invalidateQueries({ queryKey: TEMPLATE_KEYS.all }),
   })
 }
 
@@ -129,7 +131,7 @@ export function useDeleteTemplate() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (id: string) => api.deleteTemplate(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: TEMPLATE_KEYS.byUser() }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: TEMPLATE_KEYS.all }),
   })
 }
 

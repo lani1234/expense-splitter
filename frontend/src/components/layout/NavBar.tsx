@@ -1,5 +1,6 @@
 import { NavLink } from "react-router-dom"
 import { cn } from "@/lib/utils"
+import { useAuth } from "@/context/AuthContext"
 
 const links = [
   { to: "/templates", label: "Templates" },
@@ -8,11 +9,13 @@ const links = [
 ]
 
 export default function NavBar() {
+  const { signOut } = useAuth()
+
   return (
     <header className="sticky top-0 z-50 bg-nav shadow-md">
       <div className="mx-auto flex h-14 max-w-3xl items-center gap-8 px-4">
         <span className="text-xl font-bold"><span className="text-blue-300">we</span><span className="text-white">even</span></span>
-        <nav className="flex items-center gap-1">
+        <nav className="flex items-center gap-1 flex-1">
           {links.map((link) => (
             <NavLink
               key={link.to}
@@ -30,6 +33,12 @@ export default function NavBar() {
             </NavLink>
           ))}
         </nav>
+        <button
+          onClick={signOut}
+          className="text-sm text-white/60 hover:text-white transition-colors"
+        >
+          Sign out
+        </button>
       </div>
     </header>
   )

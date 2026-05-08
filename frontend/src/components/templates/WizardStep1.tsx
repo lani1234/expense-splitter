@@ -4,7 +4,6 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { createTemplate } from "@/api/templates"
-import { CURRENT_USER_ID } from "@/config/constants"
 
 interface Props {
   onNext: (templateId: string, templateName: string) => void
@@ -25,7 +24,7 @@ export default function WizardStep1({ onNext, onCancel }: Props) {
     setLoading(true)
     setError("")
     try {
-      const template = await createTemplate(CURRENT_USER_ID, name.trim(), description.trim() || undefined)
+      const template = await createTemplate(name.trim(), description.trim() || undefined)
       onNext(template.id, name.trim())
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to create template")

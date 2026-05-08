@@ -7,6 +7,8 @@ import com.expensesplitter.service.ApiResponse;
 import com.expensesplitter.service.TemplateService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
@@ -26,24 +28,26 @@ public class TemplateController {
     // Template Endpoints (Template has no nested @ManyToOne — no DTO needed)
     @PostMapping
     public ResponseEntity<ApiResponse<Template>> createTemplate(
-            @RequestParam UUID userId,
+            @AuthenticationPrincipal Jwt jwt,
             @RequestParam String name,
             @RequestParam(required = false) String description) {
+        UUID userId = UUID.fromString(jwt.getSubject());
         Template template = templateService.createTemplate(userId, name, description);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(new ApiResponse<>(true, template, "Template created successfully"));
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<ApiResponse<List<Template>>> getMyTemplates(@AuthenticationPrincipal Jwt jwt) {
+        UUID userId = UUID.fromString(jwt.getSubject());
+        List<Template> templates = templateService.getTemplatesByUserId(userId);
+        return ResponseEntity.ok(new ApiResponse<>(true, templates));
     }
 
     @GetMapping("/{templateId}")
     public ResponseEntity<ApiResponse<Template>> getTemplate(@PathVariable UUID templateId) {
         Template template = templateService.getTemplateById(templateId);
         return ResponseEntity.ok(new ApiResponse<>(true, template));
-    }
-
-    @GetMapping("/user/{userId}")
-    public ResponseEntity<ApiResponse<List<Template>>> getTemplatesByUser(@PathVariable UUID userId) {
-        List<Template> templates = templateService.getTemplatesByUserId(userId);
-        return ResponseEntity.ok(new ApiResponse<>(true, templates));
     }
 
     @GetMapping

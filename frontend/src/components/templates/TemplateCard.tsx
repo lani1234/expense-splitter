@@ -35,45 +35,39 @@ export default function TemplateCard({ template, onNewInstance }: Props) {
 
   return (
     <Card className="bg-surface border-border shadow-sm hover:shadow-md hover:border-primary/40 transition-all">
-      <CardHeader className="pb-2">
-        <div className="flex items-start justify-between">
-          <div>
-            <CardTitle className="text-base text-foreground">{template.name}</CardTitle>
-            {template.description && (
-              <p className="text-xs text-muted-foreground">{template.description}</p>
-            )}
-          </div>
-          {confirming ? (
-            <div className="flex items-center gap-1.5">
-              <span className="text-xs text-destructive">Delete?</span>
-              <Button
-                variant="destructive"
-                size="sm"
-                className="h-6 px-2 text-xs"
-                onClick={handleDelete}
-                disabled={deleteTemplate.isPending}
-              >
-                Yes
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-6 px-2 text-xs"
-                onClick={() => setConfirming(false)}
-              >
-                No
-              </Button>
-            </div>
-          ) : (
-            <div className="flex items-center gap-0.5">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7 text-muted-foreground hover:text-foreground"
-                onClick={() => navigate(`/templates/${template.id}`)}
-              >
-                <Pencil className="h-3.5 w-3.5" />
-              </Button>
+      <CardHeader className="pt-3 pb-2">
+        <div className="flex flex-col gap-1">
+          <div className="flex items-center justify-between">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 text-muted-foreground hover:text-foreground"
+              onClick={() => navigate(`/templates/${template.id}`)}
+            >
+              <Pencil className="h-3.5 w-3.5" />
+            </Button>
+            {confirming ? (
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs text-destructive">Delete?</span>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  className="h-6 px-2 text-xs"
+                  onClick={handleDelete}
+                  disabled={deleteTemplate.isPending}
+                >
+                  Yes
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 px-2 text-xs"
+                  onClick={() => setConfirming(false)}
+                >
+                  No
+                </Button>
+              </div>
+            ) : (
               <Button
                 variant="ghost"
                 size="icon"
@@ -82,8 +76,14 @@ export default function TemplateCard({ template, onNewInstance }: Props) {
               >
                 <Trash2 className="h-3.5 w-3.5" />
               </Button>
-            </div>
-          )}
+            )}
+          </div>
+          <div>
+            <CardTitle className="text-base text-foreground">{template.name}</CardTitle>
+            {template.description && (
+              <p className="text-xs text-muted-foreground">{template.description}</p>
+            )}
+          </div>
         </div>
       </CardHeader>
       {deleteError && (
