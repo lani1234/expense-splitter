@@ -52,7 +52,7 @@ export default function NewInstanceDialog({ open, onClose, defaultTemplateId }: 
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="max-w-md bg-surface border-border">
         <DialogHeader>
-          <DialogTitle>New Instance</DialogTitle>
+          <DialogTitle>New Split</DialogTitle>
         </DialogHeader>
         <div className="space-y-4 py-2">
           <div className="space-y-2">

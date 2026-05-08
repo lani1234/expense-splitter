@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { Plus } from "lucide-react"
+import { LayoutTemplate, Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import TemplateCard from "@/components/templates/TemplateCard"
 import TemplateWizard from "@/components/templates/TemplateWizard"
@@ -16,25 +16,33 @@ export default function TemplatesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Templates</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            Define reusable expense structures
-          </p>
-        </div>
-        <Button onClick={() => setWizardOpen(true)}>
-          <Plus className="h-4 w-4 mr-1.5" />
-          New Template
-        </Button>
-      </div>
-
-      {isLoading ? null : templates.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-border py-16 text-center">
-          <p className="text-muted-foreground mb-4">No templates yet.</p>
+      {(isLoading || templates.length > 0) && (
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">Templates</h1>
+            <p className="text-sm text-muted-foreground mt-0.5">
+              Define reusable expense structures
+            </p>
+          </div>
           <Button onClick={() => setWizardOpen(true)}>
             <Plus className="h-4 w-4 mr-1.5" />
-            Create your first template
+            New Template
+          </Button>
+        </div>
+      )}
+
+      {isLoading ? null : templates.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-24 text-center">
+          <div className="flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/10 mb-6">
+            <LayoutTemplate className="h-8 w-8 text-primary" />
+          </div>
+          <h2 className="text-xl font-semibold text-foreground mb-2">Create your first template</h2>
+          <p className="text-sm text-muted-foreground max-w-xs mb-8">
+            Define the structure once — participants, expense fields, and how costs split — then reuse it as many times as you need.
+          </p>
+          <Button size="lg" onClick={() => setWizardOpen(true)}>
+            <Plus className="h-4 w-4 mr-1.5" />
+            New Template
           </Button>
         </div>
       ) : (

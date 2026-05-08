@@ -21,14 +21,14 @@ export default function InstancesPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Active Instances</h1>
+          <h1 className="text-2xl font-bold text-foreground">Active Splits</h1>
           <p className="text-sm text-muted-foreground mt-0.5">
             Ongoing expense tracking periods
           </p>
         </div>
         <Button onClick={() => setDialogOpen(true)}>
           <Plus className="h-4 w-4 mr-1.5" />
-          New Instance
+          New Split
         </Button>
       </div>
 
@@ -40,10 +40,10 @@ export default function InstancesPage() {
         </div>
       ) : activeInstances.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-border py-16 text-center">
-          <p className="text-muted-foreground mb-4">No active instances.</p>
+          <p className="text-muted-foreground mb-4">No active splits.</p>
           <Button onClick={() => setDialogOpen(true)}>
             <Plus className="h-4 w-4 mr-1.5" />
-            Create an instance
+            New Split
           </Button>
         </div>
       ) : (

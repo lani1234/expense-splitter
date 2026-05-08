@@ -16,7 +16,7 @@ export default function SettledPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-foreground">History</h1>
-        <p className="text-sm text-muted-foreground mt-0.5">Settled expense periods</p>
+        <p className="text-sm text-muted-foreground mt-0.5">Settled splits</p>
       </div>
 
       {isLoading ? (
@@ -27,7 +27,7 @@ export default function SettledPage() {
         </div>
       ) : settled.length === 0 ? (
         <div className="flex items-center justify-center rounded-lg border border-dashed border-border py-16">
-          <p className="text-muted-foreground">No settled instances yet.</p>
+          <p className="text-muted-foreground">No settled splits yet.</p>
         </div>
       ) : (
         <div className="space-y-3">

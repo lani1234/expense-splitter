@@ -107,7 +107,7 @@ export default function TemplateCard({ template, onNewInstance }: Props) {
           className="w-full"
           onClick={() => onNewInstance(template.id)}
         >
-          + New Instance
+          + Start New Split
         </Button>
       </CardContent>
     </Card>
