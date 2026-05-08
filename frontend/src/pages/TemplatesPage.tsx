@@ -5,9 +5,12 @@ import TemplateCard from "@/components/templates/TemplateCard"
 import TemplateWizard from "@/components/templates/TemplateWizard"
 import NewInstanceDialog from "@/components/instances/NewInstanceDialog"
 import { useTemplates } from "@/hooks/useTemplates"
+import { useAuth } from "@/context/AuthContext"
 
 export default function TemplatesPage() {
-  const { data: templates = [], isLoading } = useTemplates()
+  const { isLoading: authLoading } = useAuth()
+  const { data: templates = [], isLoading: templatesLoading } = useTemplates()
+  const isLoading = authLoading || templatesLoading
   const [wizardOpen, setWizardOpen] = useState(false)
   const [newInstanceTemplateId, setNewInstanceTemplateId] = useState<string | null>(null)
 
@@ -26,13 +29,7 @@ export default function TemplatesPage() {
         </Button>
       </div>
 
-      {isLoading ? (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="h-36 rounded-lg bg-surface animate-pulse" />
-          ))}
-        </div>
-      ) : templates.length === 0 ? (
+      {isLoading ? null : templates.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-border py-16 text-center">
           <p className="text-muted-foreground mb-4">No templates yet.</p>
           <Button onClick={() => setWizardOpen(true)}>
