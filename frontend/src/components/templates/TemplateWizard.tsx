@@ -19,7 +19,7 @@ export default function TemplateWizard({ open, onClose }: Props) {
   const qc = useQueryClient()
 
   const handleCreated = (templateId: string) => {
-    qc.invalidateQueries({ queryKey: TEMPLATE_KEYS.byUser() })
+    qc.invalidateQueries({ queryKey: TEMPLATE_KEYS.all })
     onClose()
     navigate(`/templates/${templateId}`)
   }

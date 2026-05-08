@@ -12,13 +12,11 @@ In your Railway project, go to your backend service → **Variables** and add:
 
 | Variable | Value |
 |---|---|
-| `AWS_REGION` | `us-east-2` |
-| `COGNITO_USER_POOL_ID` | `us-east-2_wkz7j3NTS` |
+| `SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI` | `https://cognito-idp.us-east-2.amazonaws.com/us-east-2_wkz7j3NTS/.well-known/jwks.json` |
 
-These are read by `application.properties` via:
-```properties
-spring.security.oauth2.resourceserver.jwt.issuer-uri=https://cognito-idp.${AWS_REGION:us-east-2}.amazonaws.com/${COGNITO_USER_POOL_ID:us-east-2_wkz7j3NTS}
-```
+> Note: `application.properties` is not tracked in git (it contains credentials), so the full URI must be set directly as an env var in Railway. Spring Boot automatically maps `SPRING_*` uppercase env vars to their corresponding properties.
+>
+> If you previously added `AWS_REGION` and `COGNITO_USER_POOL_ID` to Railway, you can remove them — they are no longer needed.
 
 ---
 
