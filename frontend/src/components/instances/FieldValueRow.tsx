@@ -311,7 +311,7 @@ export default function FieldValueRow({
       className="group px-4 py-3"
       style={{
         display: "grid",
-        gridTemplateColumns: "90px 1fr auto",
+        gridTemplateColumns: "90px 1fr 76px",
         gap: 14,
         alignItems: "center",
       }}
