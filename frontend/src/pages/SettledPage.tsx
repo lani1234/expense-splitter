@@ -15,7 +15,7 @@ export default function SettledPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-foreground/85" style={{ fontFamily: "'Fraunces', serif", letterSpacing: "-0.02em" }}>History</h1>
+        <h1 className="text-2xl font-bold text-foreground/85">History</h1>
         <p className="text-sm text-muted-foreground mt-0.5">Settled splits</p>
       </div>
 

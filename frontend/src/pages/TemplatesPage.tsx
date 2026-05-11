@@ -19,7 +19,7 @@ export default function TemplatesPage() {
       {templates.length > 0 && (
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-foreground/85" style={{ fontFamily: "'Fraunces', serif", letterSpacing: "-0.02em" }}>Templates</h1>
+            <h1 className="text-2xl font-bold text-foreground/85">Templates</h1>
             <p className="text-sm text-muted-foreground mt-0.5">
               Define reusable expense structures
             </p>

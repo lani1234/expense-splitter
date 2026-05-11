@@ -24,10 +24,8 @@ export default function NavBar() {
       <div className="mx-auto flex h-14 max-w-3xl items-center justify-between px-4">
         <div
           style={{
-            fontFamily: "'Fraunces', serif",
-            fontWeight: 600,
+            fontWeight: 700,
             fontSize: 20,
-            letterSpacing: "-0.02em",
             display: "flex",
             alignItems: "baseline",
             gap: 1,
@@ -35,17 +33,26 @@ export default function NavBar() {
         >
           <span style={{ color: "rgba(28,22,46,0.40)" }}>we</span>
           <span style={{ color: "rgba(28,22,46,0.88)" }}>even</span>
-          <span
-            style={{
-              width: 5,
-              height: 5,
-              borderRadius: 999,
-              background: "hsl(var(--primary))",
-              display: "inline-block",
-              marginLeft: 3,
-              transform: "translateY(-2px)",
-            }}
-          />
+          <span style={{ display: "inline-flex", alignItems: "center", marginLeft: 5, transform: "translateY(-2px)" }}>
+            <svg width="12" height="7" viewBox="0 0 12 7" style={{ display: "block" }}>
+              <defs>
+                <linearGradient id="logoG1" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stopColor="oklch(0.66 0.16 218)" />
+                  <stop offset="100%" stopColor="oklch(0.54 0.20 246)" />
+                </linearGradient>
+                <linearGradient id="logoG2" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stopColor="oklch(0.66 0.16 282)" />
+                  <stop offset="100%" stopColor="oklch(0.54 0.20 310)" />
+                </linearGradient>
+                <mask id="logoBite">
+                  <rect width="12" height="7" fill="white" />
+                  <circle cx="8.5" cy="3.5" r="4.1" fill="black" />
+                </mask>
+              </defs>
+              <circle cx="3.5" cy="3.5" r="3.5" fill="url(#logoG1)" mask="url(#logoBite)" />
+              <circle cx="8.5" cy="3.5" r="3.5" fill="url(#logoG2)" />
+            </svg>
+          </span>
         </div>
 
         <nav

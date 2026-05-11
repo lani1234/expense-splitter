@@ -132,7 +132,7 @@ export default function TemplateDetailPage() {
               </div>
             ) : (
               <div className="flex items-center gap-2 group">
-                <h1 className="text-2xl font-bold text-foreground/85" style={{ fontFamily: "'Fraunces', serif", letterSpacing: "-0.02em" }}>{template.name}</h1>
+                <h1 className="text-2xl font-bold text-foreground/85">{template.name}</h1>
                 <Button
                   variant="ghost"
                   size="icon"

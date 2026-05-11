@@ -125,7 +125,6 @@ export default function InstanceDetailPage() {
               <div className="flex items-center gap-2 group">
                 <h1
                 className="text-2xl font-bold text-foreground/85"
-                style={{ fontFamily: "'Fraunces', serif", letterSpacing: "-0.02em" }}
               >
                 {instance.name}
               </h1>
