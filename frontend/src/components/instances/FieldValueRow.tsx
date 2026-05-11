@@ -250,7 +250,7 @@ export default function FieldValueRow({
                 step="0.01"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
-                className="bg-white/60 border-white/70 pl-6 h-8 text-sm"
+                className="bg-white/80 border-black/12 pl-6 h-8 text-sm"
                 autoFocus
               />
             </div>
@@ -261,7 +261,7 @@ export default function FieldValueRow({
               placeholder="Optional note"
               value={note}
               onChange={(e) => setNote(e.target.value)}
-              className="bg-white/60 border-white/70 h-8 text-sm"
+              className="bg-white/80 border-black/12 h-8 text-sm"
             />
           </div>
         </div>
@@ -283,7 +283,7 @@ export default function FieldValueRow({
           <select
             value={payerParticipantId}
             onChange={(e) => setPayerParticipantId(e.target.value)}
-            className="h-8 text-sm w-full rounded-md border border-white/70 bg-white/60 px-2"
+            className="h-8 text-sm w-full rounded-md border border-black/12 bg-white/80 px-2"
           >
             <option value="">— not tracked —</option>
             {participants.map((p) => (
