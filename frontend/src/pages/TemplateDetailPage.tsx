@@ -60,9 +60,9 @@ export default function TemplateDetailPage() {
   if (templateLoading || participantsLoading || fieldsLoading) {
     return (
       <div className="space-y-4">
-        <div className="h-8 w-48 bg-surface rounded animate-pulse" />
-        <div className="h-20 bg-surface rounded animate-pulse" />
-        <div className="h-40 bg-surface rounded animate-pulse" />
+        <div className="h-8 w-48 glass-card rounded-xl animate-pulse" />
+        <div className="h-20 glass-card rounded-xl animate-pulse" />
+        <div className="h-40 glass-card rounded-xl animate-pulse" />
       </div>
     )
   }
@@ -132,7 +132,7 @@ export default function TemplateDetailPage() {
               </div>
             ) : (
               <div className="flex items-center gap-2 group">
-                <h1 className="text-2xl font-bold text-foreground">{template.name}</h1>
+                <h1 className="text-2xl font-bold text-foreground/85" style={{ fontFamily: "'Fraunces', serif", letterSpacing: "-0.02em" }}>{template.name}</h1>
                 <Button
                   variant="ghost"
                   size="icon"
@@ -179,7 +179,7 @@ export default function TemplateDetailPage() {
       {/* Participants */}
       <div className="space-y-2">
         <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Participants</p>
-        <div className="rounded-lg border border-border bg-surface shadow-sm px-3 py-2 space-y-0.5">
+        <div className="glass-card px-3 py-2 space-y-0.5" style={{ borderRadius: "0.875rem" }}>
           {sortedParticipants.map((p) => (
             <EditableRow
               key={p.id}
@@ -201,7 +201,7 @@ export default function TemplateDetailPage() {
                   setNewParticipantName("")
                 }
               }}
-              className="h-7 text-sm bg-background border-border flex-1"
+              className="h-7 text-sm bg-white/80 border-black/12 flex-1"
             />
             <Button
               variant="ghost"
@@ -252,7 +252,7 @@ export default function TemplateDetailPage() {
           />
         ) : (
           <button
-            className="flex w-full items-center gap-1.5 px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-surface rounded-lg border border-dashed border-border transition-colors"
+            className="flex w-full items-center gap-1.5 px-3 py-2 text-sm text-foreground/40 hover:text-foreground/65 hover:bg-white/25 rounded-xl border border-dashed border-foreground/15 transition-colors"
             onClick={() => setAddingField(true)}
           >
             <Plus className="h-3.5 w-3.5" />

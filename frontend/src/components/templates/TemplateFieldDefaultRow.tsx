@@ -7,6 +7,59 @@ import { createSplitRule, createAllocation } from "@/api/templates"
 import { useQueryClient } from "@tanstack/react-query"
 import type { TemplateField, TemplateParticipant, SplitRule, SplitRuleAllocation, FieldType } from "@/types"
 import { useToast } from "@/hooks/use-toast"
+import { participantGradient } from "@/lib/participantColors"
+
+function TemplateSplitBar({ splitRuleId, allAllocations, participants }: {
+  splitRuleId: string
+  allAllocations: Record<string, SplitRuleAllocation[]>
+  participants: TemplateParticipant[]
+}) {
+  const allocations = allAllocations[splitRuleId] ?? []
+  const segments = participants
+    .map((p, i) => {
+      const alloc = allocations.find((a) => a.templateParticipantId === p.id)
+      return alloc ? { pct: alloc.percent, colorIndex: i } : null
+    })
+    .filter(Boolean) as { pct: number; colorIndex: number }[]
+
+  if (!segments.length) return null
+
+  return (
+    <div style={{
+      position: "relative", height: 32, borderRadius: 999,
+      background: "rgba(28,22,46,0.05)",
+      boxShadow: "inset 0 1px 2px rgba(0,0,0,0.06)",
+      display: "flex", overflow: "hidden",
+    }}>
+      {segments.map((seg, i) => {
+        const isLast = i === segments.length - 1
+        return (
+          <div key={i} style={{
+            width: `${seg.pct}%`,
+            background: participantGradient(seg.colorIndex),
+            position: "relative",
+            boxShadow: "inset 0 1px 0 rgba(255,255,255,0.4)",
+            borderRight: !isLast ? "1.5px solid rgba(255,255,255,0.55)" : undefined,
+          }}>
+            <span style={{
+              position: "absolute", top: "50%", transform: "translateY(-50%)",
+              ...(isLast ? { right: 10 } : { left: 10 }),
+              fontSize: 11, fontWeight: 600, color: "white",
+              textShadow: "0 1px 2px rgba(0,0,0,0.25)",
+              fontFamily: "'JetBrains Mono', monospace",
+              pointerEvents: "none",
+              opacity: seg.pct > 18 ? 1 : 0,
+              transition: "opacity .2s",
+              whiteSpace: "nowrap",
+            }}>
+              {Math.round(seg.pct)}%
+            </span>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
 
 interface Props {
   field: TemplateField
@@ -178,21 +231,21 @@ export default function TemplateFieldDefaultRow({ field, participants, splitRule
 
   if (editing) {
     return (
-      <div className="rounded-lg bg-surface-elevated p-3 space-y-3 border border-primary/30">
+      <div className="rounded-xl p-4 space-y-3 border border-primary/30" style={{ background: "rgba(255,255,255,0.65)", backdropFilter: "blur(12px)" }}>
         {/* Label + Type */}
         <div className="grid grid-cols-3 gap-3">
           <div className="col-span-2">
-            <label className="text-xs text-muted-foreground mb-1 block">Label *</label>
+            <label className="text-xs text-foreground/50 mb-1 block">Label *</label>
             <Input
               placeholder="e.g. Cable Bill"
               value={label}
               onChange={(e) => setLabel(e.target.value)}
-              className="bg-background border-border h-8 text-sm"
+              className="bg-white/80 border-black/12 h-8 text-sm"
               autoFocus
             />
           </div>
           <div>
-            <label className="text-xs text-muted-foreground mb-1 block">Type</label>
+            <label className="text-xs text-foreground/50 mb-1 block">Type</label>
             <div className="flex gap-3 h-8 items-center">
               {(["SINGLE", "MULTIPLE"] as FieldType[]).map((type) => (
                 <label key={type} className="flex items-center gap-1.5 text-sm cursor-pointer">
@@ -215,9 +268,9 @@ export default function TemplateFieldDefaultRow({ field, participants, splitRule
         {fieldType === "SINGLE" && (
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-xs text-muted-foreground mb-1 block">Default Amount</label>
+              <label className="text-xs text-foreground/50 mb-1 block">Default Amount</label>
               <div className="relative">
-                <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">$</span>
+                <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-foreground/40">$</span>
                 <Input
                   type="number"
                   min="0"
@@ -225,16 +278,16 @@ export default function TemplateFieldDefaultRow({ field, participants, splitRule
                   placeholder="0.00"
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
-                  className="bg-background border-border pl-6 h-8 text-sm"
+                  className="bg-white/80 border-black/12 pl-6 h-8 text-sm"
                 />
               </div>
             </div>
             <div>
-              <label className="text-xs text-muted-foreground mb-1 block">Default Payer</label>
+              <label className="text-xs text-foreground/50 mb-1 block">Default Payer</label>
               <select
                 value={payerParticipantId}
                 onChange={(e) => setPayerParticipantId(e.target.value)}
-                className="h-8 text-sm w-full rounded-md border border-border bg-background px-2"
+                className="h-8 text-sm w-full rounded-md border border-black/12 bg-white/80 px-2"
               >
                 <option value="">— not tracked —</option>
                 {participants.map((p) => (
@@ -248,10 +301,10 @@ export default function TemplateFieldDefaultRow({ field, participants, splitRule
         {/* Split percentages — hidden for MULTIPLE fields */}
         {fieldType === "SINGLE" && (
           <div className="space-y-2">
-            <label className="text-xs text-muted-foreground block">Split</label>
+            <label className="text-xs text-foreground/50 block">Split</label>
             {participants.map((p) => (
               <div key={p.id} className="flex items-center gap-2">
-                <span className="w-24 text-sm text-muted-foreground truncate">{p.name}</span>
+                <span className="w-24 text-sm text-foreground/60 truncate">{p.name}</span>
                 <Input
                   type="number"
                   min="0"
@@ -271,9 +324,9 @@ export default function TemplateFieldDefaultRow({ field, participants, splitRule
                       return next
                     })
                   }}
-                  className="w-20 bg-background border-border h-8 text-sm"
+                  className="w-20 bg-white/80 border-black/12 h-8 text-sm"
                 />
-                <span className="text-sm text-muted-foreground">%</span>
+                <span className="text-sm text-foreground/50">%</span>
               </div>
             ))}
             <p className={`text-xs font-medium ${percentsValid ? "text-primary" : "text-muted-foreground"}`}>
@@ -299,39 +352,59 @@ export default function TemplateFieldDefaultRow({ field, participants, splitRule
     )
   }
 
-  const hasAnyDefault = field.defaultAmount != null || field.defaultSplitRuleId || field.defaultPayerParticipantId
+  const payerIndex = participants.findIndex((p) => p.id === field.defaultPayerParticipantId)
 
   return (
-    <div className="flex items-center gap-3 px-3 py-3 hover:bg-surface-elevated group">
-      <div className="shrink-0 w-[7rem]">
+    <div
+      className="px-4 py-3 hover:bg-white/25 transition-colors"
+      style={{ display: "grid", gridTemplateColumns: "90px 1fr 76px", gap: 14, alignItems: "center" }}
+    >
+      {/* Default amount */}
+      <div className="flex flex-col">
         {field.defaultAmount != null ? (
-          <span className="text-sm font-semibold text-foreground tabular-nums">
+          <span className="font-semibold text-foreground/80 tabular-nums" style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 15 }}>
             ${field.defaultAmount.toFixed(2)}
           </span>
         ) : (
-          <span className="text-sm text-muted-foreground italic">No amount</span>
+          <span className="text-sm text-foreground/35 italic">No default</span>
         )}
       </div>
-      <div className="flex-1 flex flex-wrap gap-1.5 items-center">
-        {defaultSplitRule ? (
-          <span className="text-xs rounded-full border px-2.5 py-0.5 bg-blue-50 border-blue-200 text-blue-700 whitespace-nowrap">
-            {formatSplitLabel(defaultSplitRule.id, allAllocations, participants)}
+
+      {/* Split bar or empty state */}
+      {defaultSplitRule ? (
+        <TemplateSplitBar
+          splitRuleId={defaultSplitRule.id}
+          allAllocations={allAllocations}
+          participants={participants}
+        />
+      ) : (
+        <div style={{ height: 32, borderRadius: 999, background: "rgba(28,22,46,0.04)" }} />
+      )}
+
+      {/* Paid-by pill + edit button */}
+      <div className="flex flex-col items-end gap-1.5">
+        {defaultPayer && (
+          <span style={{
+            fontSize: 11, padding: "3px 10px 3px 5px", borderRadius: 999,
+            background: "rgba(31,154,107,0.09)", color: "#1a7a55", fontWeight: 600,
+            display: "inline-flex", alignItems: "center", gap: 5,
+            border: "1px solid rgba(31,154,107,0.18)", whiteSpace: "nowrap",
+          }}>
+            <span style={{
+              width: 16, height: 16, borderRadius: "50%",
+              background: participantGradient(payerIndex),
+              color: "white", fontSize: 8, fontWeight: 700,
+              display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+            }}>
+              {defaultPayer.name.slice(-1).toUpperCase()}
+            </span>
+            paid
           </span>
-        ) : null}
-        {defaultPayer ? (
-          <span className="text-xs rounded-full border px-2.5 py-0.5 bg-slate-100 border-slate-300 text-slate-500 whitespace-nowrap">
-            Paid by {defaultPayer.name}
-          </span>
-        ) : null}
-        {!hasAnyDefault && (
-          <span className="text-xs text-muted-foreground italic">No defaults — hover to configure</span>
         )}
-      </div>
-      <div className="opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
         <Button
           variant="ghost"
           size="icon"
-          className="h-6 w-6 text-muted-foreground hover:text-foreground"
+          className="h-6 w-6 text-foreground/35 hover:text-foreground/70"
           onClick={() => setEditing(true)}
         >
           <Pencil className="h-3.5 w-3.5" />

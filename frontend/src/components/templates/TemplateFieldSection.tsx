@@ -32,7 +32,7 @@ export default function TemplateFieldSection({ field, participants, splitRules, 
         <div className="flex-1 pl-2 border-l-2 border-primary">
           <span className="text-sm font-medium text-foreground">{field.label}</span>
         </div>
-        <Badge variant="outline" className="text-xs border-border text-muted-foreground shrink-0">
+        <Badge variant="outline" className="text-xs border-foreground/15 text-foreground/40 shrink-0">
           {field.fieldType}
         </Badge>
         {confirmDelete ? (
@@ -56,7 +56,7 @@ export default function TemplateFieldSection({ field, participants, splitRules, 
           </Button>
         )}
       </div>
-      <div className="rounded-lg border border-border bg-surface overflow-hidden shadow-sm">
+      <div className="glass-card overflow-hidden" style={{ borderRadius: "0.875rem" }}>
         <TemplateFieldDefaultRow
           field={field}
           participants={participants}

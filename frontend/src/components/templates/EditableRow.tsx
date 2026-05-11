@@ -39,7 +39,7 @@ export default function EditableRow({ label, onSave, badge }: Props) {
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           onKeyDown={(e) => { if (e.key === "Enter") handleSave(); if (e.key === "Escape") handleCancel() }}
-          className="h-7 text-sm"
+          className="h-7 text-sm bg-white/80 border-black/12"
           autoFocus
         />
         <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={handleSave} disabled={saving}>
@@ -54,14 +54,14 @@ export default function EditableRow({ label, onSave, badge }: Props) {
 
   return (
     <div className="flex items-center gap-2 group py-0.5">
-      <span className="text-sm text-foreground flex-1">{label}</span>
+      <span className="text-sm text-foreground/75 flex-1">{label}</span>
       {badge && (
-        <Badge variant="outline" className="text-xs border-border text-muted-foreground px-1.5 py-0">
+        <Badge variant="outline" className="text-xs border-foreground/15 text-foreground/40 px-1.5 py-0">
           {badge}
         </Badge>
       )}
       <button
-        className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-foreground"
+        className="opacity-0 group-hover:opacity-100 transition-opacity text-foreground/35 hover:text-foreground/70"
         onClick={() => setEditing(true)}
       >
         <Pencil className="h-3.5 w-3.5" />
