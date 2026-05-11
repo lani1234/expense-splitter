@@ -113,19 +113,27 @@ export default function FieldSection({
   return (
     <div className="space-y-1">
       <div className="flex items-center gap-2 mb-2">
-        <h3 className="font-semibold text-foreground pl-2 border-l-2 border-primary">{field.label}</h3>
-        <Badge variant="outline" className="text-xs border-border text-muted-foreground">
+        <h3
+          className="font-semibold text-foreground/75 pl-2"
+          style={{ borderLeft: "2px solid hsl(var(--primary))" }}
+        >
+          {field.label}
+        </h3>
+        <Badge
+          variant="outline"
+          className="text-xs border-foreground/15 text-foreground/40"
+        >
           {field.fieldType}
         </Badge>
       </div>
 
-      <div className="rounded-lg border border-border bg-surface overflow-hidden shadow-sm">
+      <div className="glass-card overflow-hidden" style={{ borderRadius: "0.875rem" }}>
         {fieldValues.length === 0 ? (
-          <p className="px-3 py-2 text-sm text-muted-foreground italic">No entries yet</p>
+          <p className="px-3 py-2 text-sm text-foreground/40 italic">No entries yet</p>
         ) : (
-          <div className="divide-y-2 divide-slate-200">
+          <div className="divide-y divide-white/50">
             {fieldValues.map((fv, i) => (
-              <div key={fv.id} className={i % 2 === 1 ? "bg-slate-100" : ""}>
+              <div key={fv.id} className={i % 2 === 1 ? "bg-white/20" : ""}>
                 <FieldValueRow
                   fieldValue={fv}
                   templateId={templateId}
@@ -143,7 +151,7 @@ export default function FieldSection({
         {isMultiple && !isSettled && (
           <>
             {showAdd ? (
-              <div className="p-3 border-t border-border space-y-3">
+              <div className="p-3 border-t border-white/50 space-y-3" style={{ background: "rgba(255,255,255,0.2)" }}>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="text-xs text-muted-foreground mb-1 block">Amount *</label>
@@ -206,7 +214,7 @@ export default function FieldSection({
               </div>
             ) : (
               <button
-                className="flex w-full items-center gap-1.5 px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-surface-elevated transition-colors border-t border-border"
+                className="flex w-full items-center gap-1.5 px-3 py-2 text-sm text-foreground/40 hover:text-foreground/65 hover:bg-white/25 transition-colors border-t border-white/50"
                 onClick={() => setShowAdd(true)}
               >
                 <Plus className="h-3.5 w-3.5" />

@@ -25,7 +25,7 @@ export default function InstancesPage() {
       {activeInstances.length > 0 && (
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-foreground">Active Splits</h1>
+            <h1 className="text-2xl font-bold text-foreground/85" style={{ fontFamily: "'Fraunces', serif", letterSpacing: "-0.02em" }}>Active Splits</h1>
             <p className="text-sm text-muted-foreground mt-0.5">
               Splits in progress
             </p>

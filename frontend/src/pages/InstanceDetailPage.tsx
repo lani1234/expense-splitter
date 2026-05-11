@@ -34,9 +34,9 @@ export default function InstanceDetailPage() {
   if (instanceLoading || fvLoading) {
     return (
       <div className="space-y-4">
-        <div className="h-8 w-48 bg-surface rounded animate-pulse" />
-        <div className="h-20 bg-surface rounded animate-pulse" />
-        <div className="h-40 bg-surface rounded animate-pulse" />
+        <div className="h-8 w-48 glass-card rounded-xl animate-pulse" />
+        <div className="h-20 glass-card rounded-xl animate-pulse" />
+        <div className="h-40 glass-card rounded-xl animate-pulse" />
       </div>
     )
   }
@@ -123,7 +123,12 @@ export default function InstanceDetailPage() {
               </div>
             ) : (
               <div className="flex items-center gap-2 group">
-                <h1 className="text-2xl font-bold text-foreground">{instance.name}</h1>
+                <h1
+                className="text-2xl font-bold text-foreground/85"
+                style={{ fontFamily: "'Fraunces', serif", letterSpacing: "-0.02em" }}
+              >
+                {instance.name}
+              </h1>
                 {!isSettled && (
                   <Button
                     variant="ghost"
@@ -143,13 +148,11 @@ export default function InstanceDetailPage() {
               variant="outline"
               className={`mt-1 ${
                 isSettled
-                  ? "border-primary/50 text-primary bg-primary/10"
-                  : "border-border text-muted-foreground"
+                  ? "border-primary/40 text-primary bg-primary/10"
+                  : "border-amber-300/60 text-amber-600 bg-amber-50/70"
               }`}
             >
-              {isSettled ? (
-                <CheckCircle2 className="h-3 w-3 mr-1" />
-              ) : null}
+              {isSettled && <CheckCircle2 className="h-3 w-3 mr-1" />}
               {isSettled ? "Settled" : "In Progress"}
             </Badge>
           </div>

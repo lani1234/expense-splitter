@@ -1,7 +1,6 @@
 import { useState } from "react"
 import { Users, LayoutList, Trash2, Pencil } from "lucide-react"
 import { useNavigate } from "react-router-dom"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { useParticipants, useFields, useDeleteTemplate } from "@/hooks/useTemplates"
 import type { Template } from "@/types"
@@ -34,82 +33,72 @@ export default function TemplateCard({ template, onNewInstance }: Props) {
   }
 
   return (
-    <Card className="bg-surface border-border shadow-sm hover:shadow-md hover:border-primary/40 transition-all">
-      <CardHeader className="pt-3 pb-2">
-        <div className="flex flex-col gap-1">
-          <div className="flex items-center justify-between">
+    <div className="glass-card glass-card-hover p-5 flex flex-col gap-4">
+      <div className="flex items-start justify-between">
+        <div className="flex-1 min-w-0">
+          <h3 className="font-semibold text-base text-foreground leading-tight">{template.name}</h3>
+          {template.description && (
+            <p className="text-xs text-foreground/45 mt-0.5">{template.description}</p>
+          )}
+        </div>
+        <div className="flex items-center gap-1 shrink-0 ml-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 text-foreground/30 hover:text-foreground/70"
+            onClick={() => navigate(`/templates/${template.id}`)}
+          >
+            <Pencil className="h-3.5 w-3.5" />
+          </Button>
+          {confirming ? (
+            <div className="flex items-center gap-1">
+              <Button
+                variant="destructive"
+                size="sm"
+                className="h-6 px-2 text-xs"
+                onClick={handleDelete}
+                disabled={deleteTemplate.isPending}
+              >
+                Yes
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 px-2 text-xs"
+                onClick={() => setConfirming(false)}
+              >
+                No
+              </Button>
+            </div>
+          ) : (
             <Button
               variant="ghost"
               size="icon"
-              className="h-7 w-7 text-muted-foreground hover:text-foreground"
-              onClick={() => navigate(`/templates/${template.id}`)}
+              className="h-7 w-7 text-foreground/30 hover:text-destructive"
+              onClick={handleDelete}
             >
-              <Pencil className="h-3.5 w-3.5" />
+              <Trash2 className="h-3.5 w-3.5" />
             </Button>
-            {confirming ? (
-              <div className="flex items-center gap-1.5">
-                <span className="text-xs text-destructive">Delete?</span>
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  className="h-6 px-2 text-xs"
-                  onClick={handleDelete}
-                  disabled={deleteTemplate.isPending}
-                >
-                  Yes
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-6 px-2 text-xs"
-                  onClick={() => setConfirming(false)}
-                >
-                  No
-                </Button>
-              </div>
-            ) : (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7 text-muted-foreground hover:text-destructive"
-                onClick={handleDelete}
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-              </Button>
-            )}
-          </div>
-          <div>
-            <CardTitle className="text-base text-foreground">{template.name}</CardTitle>
-            {template.description && (
-              <p className="text-xs text-muted-foreground">{template.description}</p>
-            )}
-          </div>
+          )}
         </div>
-      </CardHeader>
-      {deleteError && (
-        <div className="px-6 pb-1">
-          <p className="text-xs text-destructive">{deleteError}</p>
-        </div>
-      )}
-      <CardContent className="space-y-3">
-        <div className="flex items-center gap-4 text-sm text-muted-foreground">
-          <span className="flex items-center gap-1">
-            <Users className="h-3.5 w-3.5" />
-            {participants.map((p) => p.name).join(", ") || "No participants"}
-          </span>
-          <span className="flex items-center gap-1">
-            <LayoutList className="h-3.5 w-3.5" />
-            {fields.length} field{fields.length !== 1 ? "s" : ""}
-          </span>
-        </div>
-        <Button
-          size="sm"
-          className="w-full"
-          onClick={() => onNewInstance(template.id)}
-        >
-          + Start New Split
-        </Button>
-      </CardContent>
-    </Card>
+      </div>
+
+      {deleteError && <p className="text-xs text-destructive">{deleteError}</p>}
+
+      <div className="flex items-center gap-4 text-xs text-foreground/45">
+        <span className="flex items-center gap-1.5">
+          <Users className="h-3.5 w-3.5" />
+          {participants.map((p) => p.name).join(", ") || "No participants"}
+        </span>
+        <span className="flex items-center gap-1.5">
+          <LayoutList className="h-3.5 w-3.5" />
+          {fields.length} field{fields.length !== 1 ? "s" : ""}
+        </span>
+      </div>
+
+      <Button size="sm" className="w-full mt-auto" onClick={() => onNewInstance(template.id)}>
+        + Start New Split
+      </Button>
+    </div>
   )
 }

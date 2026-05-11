@@ -1,12 +1,6 @@
 import { useParticipants } from "@/hooks/useTemplates"
 import { useInstanceTotals } from "@/hooks/useFieldValues"
-
-const TILE_COLORS = [
-  { bg: "bg-blue-50 border-blue-200",       amount: "text-blue-600"    },
-  { bg: "bg-violet-50 border-violet-200",   amount: "text-violet-600"  },
-  { bg: "bg-emerald-50 border-emerald-200", amount: "text-emerald-600" },
-  { bg: "bg-orange-50 border-orange-200",   amount: "text-orange-600"  },
-]
+import { participantGradient } from "@/lib/participantColors"
 
 interface Props {
   instanceId: string
@@ -25,51 +19,71 @@ export default function ParticipantTotalsBar({ instanceId, templateId, grandTota
   return (
     <div className="flex items-stretch gap-3 flex-wrap">
       {grandTotal !== undefined && (
-        <div className="flex flex-col justify-center rounded-xl border px-4 py-2 min-w-[110px] shadow-sm bg-slate-50 border-slate-200">
-          <span className="text-xs text-muted-foreground mb-1">Total</span>
-          <span className="text-lg font-bold text-slate-700">${grandTotal.toFixed(2)}</span>
+        <div className="glass-card flex flex-col justify-center px-4 py-3 min-w-[110px]" style={{ borderRadius: "0.875rem" }}>
+          <span className="text-xs text-foreground/40 mb-1">Total</span>
+          <span className="text-lg font-bold text-foreground/75" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+            ${grandTotal.toFixed(2)}
+          </span>
         </div>
       )}
       {participants.map((p, i) => {
-        const colors = TILE_COLORS[i % TILE_COLORS.length]
         const share = totals?.shares[p.id] ?? 0
         const paid = totals?.paid[p.id] ?? 0
         const net = totals?.net[p.id] ?? 0
 
         return (
-          <div
-            key={p.id}
-            className={`flex flex-col rounded-xl border px-4 py-2 min-w-[110px] shadow-sm ${colors.bg}`}
-          >
-            <span className="text-xs text-muted-foreground mb-1">{p.name}</span>
+          <div key={p.id} className="glass-card flex flex-col px-4 py-3 min-w-[110px]" style={{ borderRadius: "0.875rem" }}>
+            <div className="flex items-center gap-2 mb-1.5">
+              <span
+                style={{
+                  width: 20,
+                  height: 20,
+                  borderRadius: "50%",
+                  background: participantGradient(i),
+                  color: "white",
+                  fontSize: 10,
+                  fontWeight: 700,
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  flexShrink: 0,
+                  boxShadow: "inset 0 1px 0 rgba(255,255,255,0.35)",
+                }}
+              >
+                {i + 1}
+              </span>
+              <span className="text-xs text-foreground/55 font-medium">{p.name}</span>
+            </div>
 
             {hasPayers ? (
               <div className="space-y-0.5">
                 <div className="flex justify-between gap-3 text-xs">
-                  <span className="text-muted-foreground">Share</span>
-                  <span className={`font-medium tabular-nums ${colors.amount}`}>
+                  <span className="text-foreground/40">Share</span>
+                  <span className="font-medium tabular-nums text-foreground/65" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
                     {isLoading ? "—" : `$${share.toFixed(2)}`}
                   </span>
                 </div>
                 <div className="flex justify-between gap-3 text-xs">
-                  <span className="text-muted-foreground">Paid</span>
-                  <span className={`font-medium tabular-nums ${colors.amount}`}>
+                  <span className="text-foreground/40">Paid</span>
+                  <span className="font-medium tabular-nums text-foreground/65" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
                     {isLoading ? "—" : `$${paid.toFixed(2)}`}
                   </span>
                 </div>
-                <div className="flex justify-between gap-3 text-xs border-t border-current/20 pt-0.5 mt-0.5">
-                  <span className="text-muted-foreground font-medium">Net</span>
+                <div className="flex justify-between gap-3 text-xs border-t border-black/[0.06] pt-0.5 mt-0.5">
+                  <span className="text-foreground/50 font-medium">Net</span>
                   <span
-                    className={`font-bold tabular-nums text-sm ${
-                      net <= 0 ? "text-emerald-600" : colors.amount
-                    }`}
+                    className="font-bold tabular-nums text-sm"
+                    style={{
+                      fontFamily: "'JetBrains Mono', monospace",
+                      color: net <= 0 ? "#059669" : "#c2410c",
+                    }}
                   >
-                    {isLoading ? "—" : (net < 0 ? `-$${Math.abs(net).toFixed(2)}` : `$${net.toFixed(2)}`)}
+                    {isLoading ? "—" : net < 0 ? `-$${Math.abs(net).toFixed(2)}` : `$${net.toFixed(2)}`}
                   </span>
                 </div>
               </div>
             ) : (
-              <span className={`text-lg font-bold ${colors.amount}`}>
+              <span className="text-lg font-bold text-foreground/75" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
                 {isLoading ? "—" : `$${share.toFixed(2)}`}
               </span>
             )}

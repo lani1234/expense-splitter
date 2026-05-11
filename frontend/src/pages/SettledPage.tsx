@@ -15,7 +15,7 @@ export default function SettledPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-foreground">History</h1>
+        <h1 className="text-2xl font-bold text-foreground/85" style={{ fontFamily: "'Fraunces', serif", letterSpacing: "-0.02em" }}>History</h1>
         <p className="text-sm text-muted-foreground mt-0.5">Settled splits</p>
       </div>
 
@@ -26,8 +26,8 @@ export default function SettledPage() {
           ))}
         </div>
       ) : settled.length === 0 ? (
-        <div className="flex items-center justify-center rounded-lg border border-dashed border-border py-16">
-          <p className="text-muted-foreground">No settled splits yet.</p>
+        <div className="flex items-center justify-center rounded-2xl py-16" style={{ border: "1px dashed rgba(28,22,46,0.15)" }}>
+          <p className="text-foreground/45">No settled splits yet.</p>
         </div>
       ) : (
         <div className="space-y-3">

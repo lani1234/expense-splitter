@@ -1,6 +1,5 @@
 import { useNavigate } from "react-router-dom"
 import { Clock, CheckCircle2, Trash2 } from "lucide-react"
-import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { useParticipants } from "@/hooks/useTemplates"
@@ -17,8 +16,14 @@ interface ParticipantTotalProps {
 function ParticipantTotal({ instanceId, participantId, participantName }: ParticipantTotalProps) {
   const { data: total } = useParticipantTotal(instanceId, participantId)
   return (
-    <span className="text-xs text-muted-foreground">
-      {participantName}: <span className="text-foreground font-medium">${(total ?? 0).toFixed(2)}</span>
+    <span className="text-xs text-foreground/50">
+      {participantName}:{" "}
+      <span
+        className="text-foreground/75 font-medium"
+        style={{ fontFamily: "'JetBrains Mono', monospace" }}
+      >
+        ${(total ?? 0).toFixed(2)}
+      </span>
     </span>
   )
 }
@@ -48,25 +53,22 @@ export default function InstanceCard({ instance, templateName }: Props) {
   })
 
   return (
-    <Card
-      className="bg-surface border-border shadow-sm hover:shadow-md hover:border-primary/40 transition-all cursor-pointer"
+    <div
+      className="glass-card glass-card-hover cursor-pointer px-5 py-4 space-y-2"
       onClick={() => navigate(`/instances/${instance.id}`)}
     >
-      <CardContent className="py-4 space-y-2">
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className="font-semibold text-foreground">{instance.name}</h3>
-            {templateName && (
-              <p className="text-xs text-muted-foreground">{templateName}</p>
-            )}
-          </div>
-          <div className="flex items-center gap-2">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="font-semibold text-foreground">{instance.name}</h3>
+          {templateName && <p className="text-xs text-foreground/45">{templateName}</p>}
+        </div>
+        <div className="flex items-center gap-2">
           <Badge
             variant="outline"
             className={
               isSettled
-                ? "border-primary/50 text-primary bg-primary/10"
-                : "border-border text-muted-foreground"
+                ? "border-primary/40 text-primary bg-primary/10"
+                : "border-amber-300/60 text-amber-600 bg-amber-50/70"
             }
           >
             {isSettled ? (
@@ -79,26 +81,25 @@ export default function InstanceCard({ instance, templateName }: Props) {
           <Button
             variant="ghost"
             size="icon"
-            className="h-7 w-7 text-muted-foreground hover:text-destructive"
+            className="h-7 w-7 text-foreground/25 hover:text-destructive"
             onClick={handleDelete}
           >
             <Trash2 className="h-4 w-4" />
           </Button>
-          </div>
         </div>
+      </div>
 
-        <div className="flex items-center gap-4">
-          {participants.map((p) => (
-            <ParticipantTotal
-              key={p.id}
-              instanceId={instance.id}
-              participantId={p.id}
-              participantName={p.name}
-            />
-          ))}
-          <span className="ml-auto text-xs text-muted-foreground">{formattedDate}</span>
-        </div>
-      </CardContent>
-    </Card>
+      <div className="flex items-center gap-4">
+        {participants.map((p) => (
+          <ParticipantTotal
+            key={p.id}
+            instanceId={instance.id}
+            participantId={p.id}
+            participantName={p.name}
+          />
+        ))}
+        <span className="ml-auto text-xs text-foreground/35">{formattedDate}</span>
+      </div>
+    </div>
   )
 }

@@ -4,25 +4,24 @@
 
 @layer base {
   :root {
-    /* Medium blue page background — cards pop against this */
-    --background: 224 60% 90%;
-    --foreground: 222 72% 15%;
+    /* Warm near-white base — aurora orbs provide the color */
+    --background: 36 60% 97%;
+    --foreground: 240 15% 15%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222 72% 15%;
+    --card-foreground: 240 15% 15%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222 72% 15%;
+    --popover-foreground: 240 15% 15%;
 
-    /* Bright blue primary — #3B6CF6 */
     --primary: 222 91% 60%;
     --primary-foreground: 0 0% 100%;
 
     --secondary: 220 20% 95%;
-    --secondary-foreground: 222 72% 15%;
+    --secondary-foreground: 240 15% 15%;
 
     --muted: 220 20% 95%;
-    --muted-foreground: 220 10% 50%;
+    --muted-foreground: 240 10% 48%;
 
     --accent: 222 91% 60%;
     --accent-foreground: 0 0% 100%;
@@ -36,11 +35,9 @@
 
     --radius: 0.75rem;
 
-    /* Custom surface tokens */
     --surface: 0 0% 100%;
-    --surface-elevated: 224 30% 95%;
+    --surface-elevated: 220 30% 96%;
 
-    /* Dark navy navbar */
     --nav: 222 72% 15%;
     --nav-foreground: 0 0% 100%;
   }
@@ -54,4 +51,65 @@
     @apply bg-background text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
   }
+}
+
+/* ── Glass card ── */
+.glass-card {
+  background: rgba(255, 255, 255, 0.46);
+  backdrop-filter: blur(24px) saturate(150%);
+  -webkit-backdrop-filter: blur(24px) saturate(150%);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: 1.125rem;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.35),
+    0 1px 0 rgba(255, 255, 255, 0.6),
+    0 8px 30px -12px rgba(80, 50, 140, 0.18),
+    0 24px 50px -18px rgba(80, 50, 140, 0.18);
+  transition: all 0.2s cubic-bezier(0.2, 0.7, 0.3, 1);
+}
+
+.glass-card-hover:hover {
+  background: rgba(255, 255, 255, 0.62);
+  transform: translateY(-1px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.35),
+    0 1px 0 rgba(255, 255, 255, 0.6),
+    0 12px 36px -8px rgba(80, 50, 140, 0.28),
+    0 30px 60px -20px rgba(80, 50, 140, 0.22);
+}
+
+/* ── Glass nav pill ── */
+.glass-pill {
+  background: rgba(255, 255, 255, 0.46);
+  backdrop-filter: blur(20px) saturate(140%);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.35);
+}
+
+/* ── Aurora keyframes ── */
+@keyframes aurora-drift-0 {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(20px, 18px); }
+}
+@keyframes aurora-drift-1 {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(-26px, 12px); }
+}
+@keyframes aurora-drift-2 {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(14px, -20px); }
+}
+@keyframes aurora-drift-3 {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(-18px, -12px); }
+}
+
+@keyframes aurora-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
 }
