@@ -115,19 +115,6 @@ interface Props {
   templateId: string
 }
 
-function formatSplitLabel(
-  splitRuleId: string,
-  allAllocations: Record<string, SplitRuleAllocation[]>,
-  participants: TemplateParticipant[]
-): string {
-  const allocations = allAllocations[splitRuleId] ?? []
-  if (!allocations.length) return "—"
-  const pcts = participants
-    .map((p) => allocations.find((a) => a.templateParticipantId === p.id))
-    .filter(Boolean)
-    .map((a) => `${Math.round(a!.percent)}%`)
-  return pcts.length ? pcts.join(" / ") : "—"
-}
 
 function percentsFromAllocations(
   splitRuleId: string | undefined,
