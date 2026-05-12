@@ -24,3 +24,9 @@ target/
 
 ### Properties file with sensitive data ###
 src/main/resources/application.properties
+
+
+# Internal planning / brainstorming — not for public repo
+docs/plans/
+docs/redesign_ideas/
+docs/brainstorming-*.md
