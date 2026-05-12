@@ -63,7 +63,6 @@ export default function WizardStep3({ templateId, onFinish, onBack }: Props) {
   )
 
   const handleFixedAmountChange = (id: string, raw: string) => {
-    const value = parseFloat(raw) || 0
     const total = parseFloat(draft.defaultAmount) || 0
     const next = new Set([...fixedManuallySet, id])
     setFixedManuallySet(next)
