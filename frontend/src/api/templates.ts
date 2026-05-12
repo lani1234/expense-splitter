@@ -132,3 +132,8 @@ export const renameField = (fieldId: string, label: string) =>
 
 export const deleteField = (fieldId: string) =>
   client.delete(`/templates/fields/${fieldId}`)
+
+export const setDefaultParticipantAmounts = (fieldId: string, amounts: Record<string, number>) =>
+  client
+    .put(`/templates/fields/${fieldId}/default-participant-amounts`, amounts)
+    .then((r) => r.data)

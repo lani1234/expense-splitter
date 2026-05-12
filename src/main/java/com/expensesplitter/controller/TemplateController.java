@@ -13,7 +13,9 @@ import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/templates")
@@ -170,9 +172,21 @@ public class TemplateController {
 
     @GetMapping("/{templateId}/fields")
     public ResponseEntity<ApiResponse<List<TemplateFieldResponse>>> getFields(@PathVariable UUID templateId) {
-        List<TemplateFieldResponse> fields = templateService.getFieldsByTemplate(templateId)
-                .stream().map(TemplateFieldResponse::from).toList();
-        return ResponseEntity.ok(new ApiResponse<>(true, fields));
+        var fields = templateService.getFieldsByTemplate(templateId);
+        var fieldIds = fields.stream().map(f -> f.getId()).collect(Collectors.toList());
+        var amountsByField = templateService.getDefaultParticipantAmountsGrouped(fieldIds);
+        List<TemplateFieldResponse> response = fields.stream()
+                .map(f -> TemplateFieldResponse.from(f, amountsByField.get(f.getId())))
+                .toList();
+        return ResponseEntity.ok(new ApiResponse<>(true, response));
+    }
+
+    @PutMapping("/fields/{fieldId}/default-participant-amounts")
+    public ResponseEntity<ApiResponse<Void>> setDefaultParticipantAmounts(
+            @PathVariable UUID fieldId,
+            @RequestBody Map<UUID, BigDecimal> amounts) {
+        templateService.setDefaultParticipantAmounts(fieldId, amounts);
+        return ResponseEntity.ok(new ApiResponse<>(true, "Default amounts updated successfully"));
     }
 
     @PutMapping("/fields/{fieldId}")

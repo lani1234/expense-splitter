@@ -6,8 +6,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -21,6 +24,7 @@ public class TemplateService {
     private final TemplateInstanceRepository instanceRepository;
     private final InstanceFieldValueRepository fieldValueRepository;
     private final ParticipantEntryAmountRepository participantEntryAmountRepository;
+    private final TemplateFieldDefaultParticipantAmountRepository defaultParticipantAmountRepository;
 
     public TemplateService(TemplateRepository templateRepository,
                            TemplateParticipantRepository participantRepository,
@@ -29,7 +33,8 @@ public class TemplateService {
                            TemplateFieldRepository fieldRepository,
                            TemplateInstanceRepository instanceRepository,
                            InstanceFieldValueRepository fieldValueRepository,
-                           ParticipantEntryAmountRepository participantEntryAmountRepository) {
+                           ParticipantEntryAmountRepository participantEntryAmountRepository,
+                           TemplateFieldDefaultParticipantAmountRepository defaultParticipantAmountRepository) {
         this.templateRepository = templateRepository;
         this.participantRepository = participantRepository;
         this.splitRuleRepository = splitRuleRepository;
@@ -38,6 +43,7 @@ public class TemplateService {
         this.instanceRepository = instanceRepository;
         this.fieldValueRepository = fieldValueRepository;
         this.participantEntryAmountRepository = participantEntryAmountRepository;
+        this.defaultParticipantAmountRepository = defaultParticipantAmountRepository;
     }
 
     // Template CRUD Operations
@@ -309,5 +315,40 @@ public class TemplateService {
 
     public void deleteField(UUID fieldId) {
         fieldRepository.deleteById(fieldId);
+    }
+
+    // Default Participant Amount Operations
+    public Map<UUID, BigDecimal> getDefaultParticipantAmountsForField(UUID fieldId) {
+        return defaultParticipantAmountRepository.findByTemplateFieldId(fieldId).stream()
+                .collect(Collectors.toMap(
+                        a -> a.getTemplateParticipant().getId(),
+                        TemplateFieldDefaultParticipantAmount::getAmount
+                ));
+    }
+
+    public Map<UUID, Map<UUID, BigDecimal>> getDefaultParticipantAmountsGrouped(Collection<UUID> fieldIds) {
+        return defaultParticipantAmountRepository.findByTemplateFieldIdIn(fieldIds).stream()
+                .collect(Collectors.groupingBy(
+                        a -> a.getTemplateField().getId(),
+                        Collectors.toMap(
+                                a -> a.getTemplateParticipant().getId(),
+                                TemplateFieldDefaultParticipantAmount::getAmount
+                        )
+                ));
+    }
+
+    public void setDefaultParticipantAmounts(UUID fieldId, Map<UUID, BigDecimal> amounts) {
+        TemplateField field = getFieldById(fieldId);
+        defaultParticipantAmountRepository.deleteByTemplateFieldId(fieldId);
+        if (amounts != null) {
+            amounts.forEach((participantId, amount) -> {
+                TemplateParticipant participant = getParticipantById(participantId);
+                TemplateFieldDefaultParticipantAmount entry = new TemplateFieldDefaultParticipantAmount();
+                entry.setTemplateField(field);
+                entry.setTemplateParticipant(participant);
+                entry.setAmount(amount);
+                defaultParticipantAmountRepository.save(entry);
+            });
+        }
     }
 }

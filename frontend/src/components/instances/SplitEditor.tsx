@@ -39,6 +39,16 @@ export default function SplitEditor({
   const { data: participants = [] } = useParticipants(templateId)
   const { data: defaultAllocations = [] } = useAllocations(defaultSplitRuleId ?? "")
 
+  // When there's no defaultSplitRuleId, we show an "equal split" preset as the first option.
+  // equalPreset tracks whether that preset is active vs the user being in free-form custom mode.
+  const [equalPreset, setEqualPreset] = useState(
+    !defaultSplitRuleId && currentSplitMode === "FIELD_VALUE_CUSTOM_PERCENT"
+  )
+
+  useEffect(() => {
+    if (currentSplitMode !== "FIELD_VALUE_CUSTOM_PERCENT") setEqualPreset(false)
+  }, [currentSplitMode])
+
   const templateDefaultLabel = useMemo(() => {
     if (defaultAllocations.length && participants.length) {
       const pcts = participants
@@ -107,37 +117,72 @@ export default function SplitEditor({
     onCustomPercentagesChange(autoDistribute(customPercentages, id, value, next, 100, 0))
   }
 
+  const handleEqualSplitClick = () => {
+    const n = participants.length
+    if (n > 0) {
+      const equal = Math.round(100 / n)
+      onCustomPercentagesChange(
+        Object.fromEntries(
+          participants.map((p, i) => [p.id, i === n - 1 ? 100 - equal * (n - 1) : equal])
+        )
+      )
+    }
+    onSplitModeChange("FIELD_VALUE_CUSTOM_PERCENT")
+    setEqualPreset(true)
+  }
+
+  const handleCustomPercentClick = () => {
+    onSplitModeChange("FIELD_VALUE_CUSTOM_PERCENT")
+    setEqualPreset(false)
+  }
+
+  // Whether the "first option" button is selected
+  const firstSelected = defaultSplitRuleId
+    ? currentSplitMode === "TEMPLATE_FIELD_PERCENT_SPLIT"
+    : equalPreset && currentSplitMode === "FIELD_VALUE_CUSTOM_PERCENT"
+
+  // Whether "Custom Percentage Split" button is selected (only when NOT in equal preset mode)
+  const customSelected = currentSplitMode === "FIELD_VALUE_CUSTOM_PERCENT" &&
+    (defaultSplitRuleId ? true : !equalPreset)
+
   return (
     <div className="space-y-1">
       <p className="text-xs text-muted-foreground mb-1">Split</p>
-      {/* Template Default — only shown when field has a default split rule */}
-      {defaultSplitRuleId && <button
-        type="button"
-        onClick={() => onSplitModeChange("TEMPLATE_FIELD_PERCENT_SPLIT")}
-        className={`flex items-center gap-2 w-full rounded-md px-2 py-1.5 text-left transition-colors ${
-          currentSplitMode === "TEMPLATE_FIELD_PERCENT_SPLIT"
-            ? "bg-primary/10 text-foreground"
-            : "text-muted-foreground hover:text-foreground hover:bg-surface-elevated"
-        }`}
-      >
-        <RadioDot selected={currentSplitMode === "TEMPLATE_FIELD_PERCENT_SPLIT"} />
-        <span className="text-sm">{templateDefaultLabel}</span>
-      </button>}
 
-      {/* Custom Percentage Split */}
+      {/* Option 1: Template Default (if split rule) or Equal Split preset (if no split rule) */}
       <button
         type="button"
-        onClick={() => onSplitModeChange("FIELD_VALUE_CUSTOM_PERCENT")}
+        onClick={defaultSplitRuleId
+          ? () => onSplitModeChange("TEMPLATE_FIELD_PERCENT_SPLIT")
+          : handleEqualSplitClick
+        }
         className={`flex items-center gap-2 w-full rounded-md px-2 py-1.5 text-left transition-colors ${
-          currentSplitMode === "FIELD_VALUE_CUSTOM_PERCENT"
+          firstSelected
             ? "bg-primary/10 text-foreground"
             : "text-muted-foreground hover:text-foreground hover:bg-surface-elevated"
         }`}
       >
-        <RadioDot selected={currentSplitMode === "FIELD_VALUE_CUSTOM_PERCENT"} />
+        <RadioDot selected={firstSelected} />
+        <span className="text-sm">{templateDefaultLabel}</span>
+      </button>
+
+      {/* Option 2: Custom Percentage Split */}
+      <button
+        type="button"
+        onClick={defaultSplitRuleId
+          ? () => onSplitModeChange("FIELD_VALUE_CUSTOM_PERCENT")
+          : handleCustomPercentClick
+        }
+        className={`flex items-center gap-2 w-full rounded-md px-2 py-1.5 text-left transition-colors ${
+          customSelected
+            ? "bg-primary/10 text-foreground"
+            : "text-muted-foreground hover:text-foreground hover:bg-surface-elevated"
+        }`}
+      >
+        <RadioDot selected={customSelected} />
         <span className="text-sm">Custom Percentage Split</span>
       </button>
-      {currentSplitMode === "FIELD_VALUE_CUSTOM_PERCENT" && (
+      {customSelected && (
         <div className="pl-6 pt-1 space-y-2">
           {participants.map((p) => (
             <div key={p.id} className="flex items-center gap-2">
@@ -158,7 +203,7 @@ export default function SplitEditor({
         </div>
       )}
 
-      {/* Fixed Amounts */}
+      {/* Option 3: Fixed Amounts */}
       <button
         type="button"
         onClick={() => onSplitModeChange("FIELD_VALUE_FIXED_AMOUNTS")}

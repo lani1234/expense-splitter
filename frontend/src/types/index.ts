@@ -44,6 +44,7 @@ export interface TemplateField {
   defaultAmount?: number
   defaultPayerParticipantId?: string
   displayOrder: number
+  defaultParticipantAmounts?: Record<string, number>
 }
 
 export interface TemplateInstance {

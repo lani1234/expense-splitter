@@ -8,6 +8,7 @@ import {
   createAllocation,
   getSplitRules,
   getAllocations,
+  setDefaultParticipantAmounts,
 } from "@/api/templates"
 import { useQueryClient } from "@tanstack/react-query"
 import { TEMPLATE_KEYS } from "@/hooks/useTemplates"
@@ -27,9 +28,14 @@ export default function AddTemplateFieldForm({ templateId, participants, fieldCo
   const [fieldType, setFieldType] = useState<FieldType>("SINGLE")
   const [defaultAmount, setDefaultAmount] = useState("")
   const [defaultPayerParticipantId, setDefaultPayerParticipantId] = useState("")
+  const [splitMode, setSplitMode] = useState<"PERCENT" | "FIXED">("PERCENT")
   const [percents, setPercents] = useState<Record<string, string>>(
     Object.fromEntries(participants.map((p) => [p.id, ""]))
   )
+  const [fixedAmounts, setFixedAmounts] = useState<Record<string, string>>(
+    Object.fromEntries(participants.map((p) => [p.id, ""]))
+  )
+  const [fixedManuallySet, setFixedManuallySet] = useState(new Set<string>())
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
 
@@ -39,9 +45,44 @@ export default function AddTemplateFieldForm({ templateId, participants, fieldCo
   )
   const percentsValid = Math.abs(percentTotal - 100) < 0.01
 
+  const fixedTotal = participants.reduce(
+    (sum, p) => sum + (parseFloat(fixedAmounts[p.id] ?? "") || 0),
+    0
+  )
+
+  const handleFixedAmountChange = (id: string, raw: string) => {
+    const total = parseFloat(defaultAmount) || 0
+    const next = new Set([...fixedManuallySet, id])
+    setFixedManuallySet(next)
+
+    const updated: Record<string, string> = { ...fixedAmounts, [id]: raw }
+
+    if (total > 0) {
+      const targets = participants.filter((p) => !next.has(p.id))
+      if (targets.length > 0) {
+        const manualSum = participants
+          .filter((p) => next.has(p.id))
+          .reduce((s, p) => s + (parseFloat(updated[p.id] ?? "0") || 0), 0)
+        const remaining = total - manualSum
+        if (remaining >= 0) {
+          const each = Math.round((remaining / targets.length) * 100) / 100
+          targets.forEach((p, i) => {
+            if (i === targets.length - 1) {
+              updated[p.id] = String(Math.max(0, Math.round((remaining - (targets.length - 1) * each) * 100) / 100))
+            } else {
+              updated[p.id] = String(each)
+            }
+          })
+        }
+      }
+    }
+
+    setFixedAmounts(updated)
+  }
+
   const handleAdd = async () => {
     if (!label.trim()) { setError("Label is required"); return }
-    if (fieldType === "SINGLE" && !percentsValid) {
+    if (fieldType === "SINGLE" && splitMode === "PERCENT" && !percentsValid) {
       setError(`Percentages must sum to 100 (currently ${percentTotal.toFixed(1)})`)
       return
     }
@@ -51,7 +92,7 @@ export default function AddTemplateFieldForm({ templateId, participants, fieldCo
     try {
       let resolvedRuleId: string | null = null
 
-      if (fieldType === "SINGLE") {
+      if (fieldType === "SINGLE" && splitMode === "PERCENT") {
         // Build desired percentages
         const wantedPercents: Record<string, number> = {}
         for (const p of participants) {
@@ -81,15 +122,35 @@ export default function AddTemplateFieldForm({ templateId, participants, fieldCo
         }
       }
 
-      await createField(
+      // For fixed amounts, derive the default total from per-participant sum; otherwise use the explicit default amount
+      const computedDefaultAmount =
+        fieldType === "SINGLE" && splitMode === "FIXED" && fixedTotal > 0
+          ? fixedTotal
+          : fieldType === "SINGLE" && defaultAmount
+          ? parseFloat(defaultAmount)
+          : undefined
+
+      const newField = await createField(
         templateId,
         label.trim(),
         fieldType,
         fieldCount + 1,
         resolvedRuleId ?? undefined,
-        fieldType === "SINGLE" && defaultAmount ? parseFloat(defaultAmount) : undefined,
+        computedDefaultAmount,
         fieldType === "SINGLE" && defaultPayerParticipantId ? defaultPayerParticipantId : undefined
       )
+
+      // Save per-participant fixed amounts if any were entered
+      if (fieldType === "SINGLE" && splitMode === "FIXED" && fixedTotal > 0) {
+        const amounts: Record<string, number> = {}
+        for (const p of participants) {
+          const val = parseFloat(fixedAmounts[p.id] ?? "0") || 0
+          if (val > 0) amounts[p.id] = val
+        }
+        if (Object.keys(amounts).length > 0) {
+          await setDefaultParticipantAmounts(newField.id, amounts)
+        }
+      }
 
       qc.invalidateQueries({ queryKey: TEMPLATE_KEYS.fields(templateId) })
       qc.invalidateQueries({ queryKey: TEMPLATE_KEYS.splitRules(templateId) })
@@ -159,7 +220,7 @@ export default function AddTemplateFieldForm({ templateId, participants, fieldCo
             <select
               value={defaultPayerParticipantId}
               onChange={(e) => setDefaultPayerParticipantId(e.target.value)}
-              className="h-8 text-sm w-full rounded-md border border-border bg-background px-2"
+              className="h-8 text-sm w-full rounded-md border border-border bg-background px-2 mt-1.5"
             >
               <option value="">— not set —</option>
               {participants.map((p) => (
@@ -170,42 +231,85 @@ export default function AddTemplateFieldForm({ templateId, participants, fieldCo
         </div>
       )}
 
-      {/* Split percentages — hidden for MULTIPLE fields */}
+      {/* Split — hidden for MULTIPLE fields */}
       {fieldType === "SINGLE" && (
         <div className="space-y-2">
           <label className="text-xs text-muted-foreground">Split *</label>
-          <div className="space-y-2">
-            {participants.map((p) => (
-              <div key={p.id} className="flex items-center gap-2">
-                <span className="w-24 text-sm text-muted-foreground truncate">{p.name}</span>
-                <Input
-                  type="number"
-                  min="0"
-                  max="100"
-                  step="0.1"
-                  placeholder="0"
-                  value={percents[p.id] ?? ""}
-                  onChange={(e) => {
-                    const val = e.target.value
-                    setPercents((prev) => {
-                      const next = { ...prev, [p.id]: val }
-                      if (participants.length === 2) {
-                        const other = participants.find((o) => o.id !== p.id)!
-                        const remainder = 100 - (parseFloat(val) || 0)
-                        next[other.id] = remainder > 0 ? String(Math.round(remainder * 10) / 10) : "0"
-                      }
-                      return next
-                    })
-                  }}
-                  className="w-20 bg-background border-border h-8 text-sm"
+          <div className="flex gap-4">
+            {(["PERCENT", "FIXED"] as const).map((mode) => (
+              <label key={mode} className="flex items-center gap-1.5 text-sm cursor-pointer">
+                <input
+                  type="radio"
+                  name="splitMode-add"
+                  value={mode}
+                  checked={splitMode === mode}
+                  onChange={() => { setSplitMode(mode); setFixedManuallySet(new Set()) }}
+                  className="accent-primary"
                 />
-                <span className="text-sm text-muted-foreground">%</span>
-              </div>
+                {mode === "PERCENT" ? "Percentages" : "Fixed Amounts"}
+              </label>
             ))}
           </div>
-          <p className={`text-xs font-medium ${percentsValid ? "text-primary" : "text-muted-foreground"}`}>
-            Total: {percentTotal.toFixed(1)}%{percentsValid ? " ✓" : participants.length >= 3 ? ` · ${(100 - percentTotal).toFixed(1)}% remaining` : " (need 100%)"}
-          </p>
+          {splitMode === "PERCENT" && (
+            <>
+              <div className="space-y-2">
+                {participants.map((p) => (
+                  <div key={p.id} className="flex items-center gap-2">
+                    <span className="w-24 text-sm text-muted-foreground truncate">{p.name}</span>
+                    <Input
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="0.1"
+                      placeholder="0"
+                      value={percents[p.id] ?? ""}
+                      onChange={(e) => {
+                        const val = e.target.value
+                        setPercents((prev) => {
+                          const next = { ...prev, [p.id]: val }
+                          if (participants.length === 2) {
+                            const other = participants.find((o) => o.id !== p.id)!
+                            const remainder = 100 - (parseFloat(val) || 0)
+                            next[other.id] = remainder > 0 ? String(Math.round(remainder * 10) / 10) : "0"
+                          }
+                          return next
+                        })
+                      }}
+                      className="w-20 bg-background border-border h-8 text-sm"
+                    />
+                    <span className="text-sm text-muted-foreground">%</span>
+                  </div>
+                ))}
+              </div>
+              <p className={`text-xs font-medium ${percentsValid ? "text-primary" : "text-muted-foreground"}`}>
+                Total: {percentTotal.toFixed(1)}%{percentsValid ? " ✓" : participants.length >= 3 ? ` · ${(100 - percentTotal).toFixed(1)}% remaining` : " (need 100%)"}
+              </p>
+            </>
+          )}
+          {splitMode === "FIXED" && (
+            <>
+              <div className="space-y-2">
+                {participants.map((p) => (
+                  <div key={p.id} className="flex items-center gap-2">
+                    <span className="w-24 text-sm text-muted-foreground truncate">{p.name}</span>
+                    <span className="text-sm text-muted-foreground">$</span>
+                    <Input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      placeholder="0.00"
+                      value={fixedAmounts[p.id] ?? ""}
+                      onChange={(e) => handleFixedAmountChange(p.id, e.target.value)}
+                      className="w-24 bg-background border-border h-8 text-sm"
+                    />
+                  </div>
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Total: ${fixedTotal.toFixed(2)}{fixedTotal === 0 ? " · optional, can be set per instance" : ""}
+              </p>
+            </>
+          )}
         </div>
       )}
 
@@ -219,7 +323,7 @@ export default function AddTemplateFieldForm({ templateId, participants, fieldCo
         <Button
           size="sm"
           onClick={handleAdd}
-          disabled={loading || !label.trim() || (fieldType === "SINGLE" && !percentsValid)}
+          disabled={loading || !label.trim() || (fieldType === "SINGLE" && splitMode === "PERCENT" && !percentsValid)}
           className="h-7"
         >
           {loading ? (

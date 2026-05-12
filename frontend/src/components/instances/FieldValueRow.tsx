@@ -137,21 +137,47 @@ export default function FieldValueRow({
   const [editing, setEditing] = useState(false)
   const [amount, setAmount] = useState(String(fieldValue.amount))
   const [note, setNote] = useState(fieldValue.note ?? "")
-  const [splitMode, setSplitMode] = useState<SplitMode>(fieldValue.splitMode)
+  const [splitMode, setSplitMode] = useState<SplitMode>(
+    fieldValue.amount === 0 && fieldValue.splitMode === "FIELD_VALUE_FIXED_AMOUNTS"
+      ? "FIELD_VALUE_CUSTOM_PERCENT"
+      : fieldValue.splitMode
+  )
   const [fixedAmounts, setFixedAmounts] = useState<Record<string, number>>({})
   const [customPercentages, setCustomPercentages] = useState<Record<string, number>>({})
   const [payerParticipantId, setPayerParticipantId] = useState(fieldValue.payerParticipantId ?? "")
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
-    if (editing && fieldValue.splitMode === "FIELD_VALUE_CUSTOM_PERCENT" && fieldValue.amount > 0) {
-      const percs = Object.fromEntries(
-        participantEntryAmounts.map((pea) => [
-          pea.templateParticipantId,
-          Math.round((pea.amount / fieldValue.amount) * 100),
-        ])
+    if (!editing) return
+    const isFixed =
+      fieldValue.splitMode === "FIELD_VALUE_FIXED_AMOUNTS" && fieldValue.amount > 0
+    const isCustomPercent =
+      fieldValue.splitMode === "FIELD_VALUE_CUSTOM_PERCENT" ||
+      (fieldValue.amount === 0 && fieldValue.splitMode === "FIELD_VALUE_FIXED_AMOUNTS")
+
+    if (isFixed && participantEntryAmounts.length > 0) {
+      setFixedAmounts(
+        Object.fromEntries(participantEntryAmounts.map((pea) => [pea.templateParticipantId, pea.amount]))
       )
-      setCustomPercentages(percs)
+    } else if (isCustomPercent) {
+      if (fieldValue.amount > 0 && participantEntryAmounts.length > 0) {
+        setCustomPercentages(
+          Object.fromEntries(
+            participantEntryAmounts.map((pea) => [
+              pea.templateParticipantId,
+              Math.round((pea.amount / fieldValue.amount) * 100),
+            ])
+          )
+        )
+      } else if (participants.length > 0) {
+        const n = participants.length
+        const equal = Math.round(100 / n)
+        setCustomPercentages(
+          Object.fromEntries(
+            participants.map((p, i) => [p.id, i === n - 1 ? 100 - equal * (n - 1) : equal])
+          )
+        )
+      }
     }
   }, [editing])
 
@@ -365,7 +391,7 @@ export default function FieldValueRow({
                 flexShrink: 0,
               }}
             >
-              {payerParticipant.name.slice(-1).toUpperCase()}
+              {payerParticipant.name.charAt(0).toUpperCase()}
             </span>
             paid
           </span>

@@ -13,6 +13,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -307,17 +308,33 @@ public class InstanceService {
                 fieldValue.setAmount(BigDecimal.ZERO);
             }
 
-            fieldValue.setSplitMode(SplitMode.TEMPLATE_FIELD_PERCENT_SPLIT);
-
             if (field.getDefaultPayerParticipant() != null) {
                 fieldValue.setPayerParticipant(field.getDefaultPayerParticipant());
             }
 
-            InstanceFieldValue savedFieldValue = fieldValueRepository.save(fieldValue);
+            boolean hasDefaultSplitRule = field.getDefaultSplitRule() != null;
+            InstanceFieldValue savedFieldValue;
 
-            // Calculate allocations for fields with amounts
-            if (field.getDefaultAmount() != null && field.getDefaultAmount().compareTo(BigDecimal.ZERO) > 0) {
-                calculateAndCreateParticipantEntryAmounts(savedFieldValue);
+            if (hasDefaultSplitRule) {
+                fieldValue.setSplitMode(SplitMode.TEMPLATE_FIELD_PERCENT_SPLIT);
+                fieldValue.setAmount(field.getDefaultAmount() != null ? field.getDefaultAmount() : BigDecimal.ZERO);
+                savedFieldValue = fieldValueRepository.save(fieldValue);
+                if (field.getDefaultAmount() != null && field.getDefaultAmount().compareTo(BigDecimal.ZERO) > 0) {
+                    calculateAndCreateParticipantEntryAmounts(savedFieldValue);
+                }
+            } else {
+                Map<UUID, BigDecimal> defaultAmounts = templateService.getDefaultParticipantAmountsForField(field.getId());
+                if (!defaultAmounts.isEmpty()) {
+                    fieldValue.setSplitMode(SplitMode.FIELD_VALUE_FIXED_AMOUNTS);
+                    BigDecimal total = defaultAmounts.values().stream().reduce(BigDecimal.ZERO, BigDecimal::add);
+                    fieldValue.setAmount(total);
+                    savedFieldValue = fieldValueRepository.save(fieldValue);
+                    createFixedAmountAllocations(savedFieldValue, defaultAmounts);
+                } else {
+                    fieldValue.setSplitMode(SplitMode.FIELD_VALUE_CUSTOM_PERCENT);
+                    fieldValue.setAmount(field.getDefaultAmount() != null ? field.getDefaultAmount() : BigDecimal.ZERO);
+                    savedFieldValue = fieldValueRepository.save(fieldValue);
+                }
             }
         }
     }

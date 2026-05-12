@@ -4,6 +4,7 @@ import com.expensesplitter.entity.TemplateField;
 import com.expensesplitter.enums.FieldType;
 
 import java.math.BigDecimal;
+import java.util.Map;
 import java.util.UUID;
 
 public record TemplateFieldResponse(
@@ -14,9 +15,14 @@ public record TemplateFieldResponse(
         UUID defaultSplitRuleId,
         BigDecimal defaultAmount,
         UUID defaultPayerParticipantId,
-        int displayOrder
+        int displayOrder,
+        Map<UUID, BigDecimal> defaultParticipantAmounts
 ) {
     public static TemplateFieldResponse from(TemplateField e) {
+        return from(e, null);
+    }
+
+    public static TemplateFieldResponse from(TemplateField e, Map<UUID, BigDecimal> defaultParticipantAmounts) {
         return new TemplateFieldResponse(
                 e.getId(),
                 e.getTemplate().getId(),
@@ -25,7 +31,8 @@ public record TemplateFieldResponse(
                 e.getDefaultSplitRule() != null ? e.getDefaultSplitRule().getId() : null,
                 e.getDefaultAmount(),
                 e.getDefaultPayerParticipant() != null ? e.getDefaultPayerParticipant().getId() : null,
-                e.getDisplayOrder()
+                e.getDisplayOrder(),
+                defaultParticipantAmounts
         );
     }
 }

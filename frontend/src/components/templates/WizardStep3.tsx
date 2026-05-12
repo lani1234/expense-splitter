@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
-import { createField, createSplitRule, createAllocation, getParticipants, getSplitRules, getAllocations } from "@/api/templates"
+import { createField, createSplitRule, createAllocation, getParticipants, getSplitRules, getAllocations, setDefaultParticipantAmounts } from "@/api/templates"
 import { useFields, TEMPLATE_KEYS } from "@/hooks/useTemplates"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import type { FieldType } from "@/types"
@@ -20,7 +20,9 @@ interface FieldDraft {
   fieldType: FieldType
   defaultAmount: string
   defaultPayerParticipantId: string
+  splitMode: "PERCENT" | "FIXED"
   percents: Record<string, string>
+  fixedAmounts: Record<string, string>
 }
 
 const emptyDraft = (participantIds: string[]): FieldDraft => ({
@@ -28,7 +30,9 @@ const emptyDraft = (participantIds: string[]): FieldDraft => ({
   fieldType: "SINGLE",
   defaultAmount: "",
   defaultPayerParticipantId: "",
+  splitMode: "PERCENT",
   percents: Object.fromEntries(participantIds.map((id) => [id, ""])),
+  fixedAmounts: Object.fromEntries(participantIds.map((id) => [id, ""])),
 })
 
 export default function WizardStep3({ templateId, onFinish, onBack }: Props) {
@@ -43,6 +47,7 @@ export default function WizardStep3({ templateId, onFinish, onBack }: Props) {
   const [draft, setDraft] = useState<FieldDraft>(() =>
     emptyDraft(participants.map((p) => p.id))
   )
+  const [fixedManuallySet, setFixedManuallySet] = useState(new Set<string>())
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
 
@@ -52,12 +57,48 @@ export default function WizardStep3({ templateId, onFinish, onBack }: Props) {
   )
   const percentsValid = Math.abs(percentTotal - 100) < 0.01
 
+  const fixedTotal = participants.reduce(
+    (sum, p) => sum + (parseFloat(draft.fixedAmounts[p.id] ?? "") || 0),
+    0
+  )
+
+  const handleFixedAmountChange = (id: string, raw: string) => {
+    const value = parseFloat(raw) || 0
+    const total = parseFloat(draft.defaultAmount) || 0
+    const next = new Set([...fixedManuallySet, id])
+    setFixedManuallySet(next)
+
+    const updated: Record<string, string> = { ...draft.fixedAmounts, [id]: raw }
+
+    if (total > 0) {
+      const targets = participants.filter((p) => !next.has(p.id))
+      if (targets.length > 0) {
+        const manualSum = participants
+          .filter((p) => next.has(p.id))
+          .reduce((s, p) => s + (parseFloat(updated[p.id] ?? "0") || 0), 0)
+        const remaining = total - manualSum
+        if (remaining >= 0) {
+          const each = Math.round((remaining / targets.length) * 100) / 100
+          targets.forEach((p, i) => {
+            if (i === targets.length - 1) {
+              updated[p.id] = String(Math.max(0, Math.round((remaining - (targets.length - 1) * each) * 100) / 100))
+            } else {
+              updated[p.id] = String(each)
+            }
+          })
+        }
+      }
+    }
+
+    setDraft((d) => ({ ...d, fixedAmounts: updated }))
+  }
+
   const addField = async () => {
     if (!draft.label.trim()) {
       setError("Label is required")
       return
     }
-    if (draft.fieldType === "SINGLE" && !percentsValid) {
+    if (draft.fieldType === "SINGLE" && draft.splitMode === "PERCENT" && !percentsValid) {
       setError(`Percentages must sum to 100 (currently ${percentTotal.toFixed(1)})`)
       return
     }
@@ -67,7 +108,7 @@ export default function WizardStep3({ templateId, onFinish, onBack }: Props) {
     try {
       let resolvedRuleId: string | null = null
 
-      if (draft.fieldType === "SINGLE") {
+      if (draft.fieldType === "SINGLE" && draft.splitMode === "PERCENT") {
         // 1. Build the desired percentages for each participant
         const wantedPercents: Record<string, number> = {}
         for (const p of participants) {
@@ -97,22 +138,43 @@ export default function WizardStep3({ templateId, onFinish, onBack }: Props) {
         }
       }
 
+      // For fixed amounts, use the sum as the default total amount
+      const computedDefaultAmount =
+        draft.fieldType === "SINGLE" && draft.splitMode === "FIXED" && fixedTotal > 0
+          ? fixedTotal
+          : draft.fieldType === "SINGLE" && draft.defaultAmount
+          ? parseFloat(draft.defaultAmount)
+          : undefined
+
       // 4. Create the field
-      await createField(
+      const newField = await createField(
         templateId,
         draft.label.trim(),
         draft.fieldType,
         fields.length + 1,
         resolvedRuleId ?? undefined,
-        draft.fieldType === "SINGLE" && draft.defaultAmount ? parseFloat(draft.defaultAmount) : undefined,
+        computedDefaultAmount,
         draft.fieldType === "SINGLE" ? draft.defaultPayerParticipantId || undefined : undefined
       )
+
+      // 5. Save per-participant fixed amounts if any were entered
+      if (draft.fieldType === "SINGLE" && draft.splitMode === "FIXED" && fixedTotal > 0) {
+        const amounts: Record<string, number> = {}
+        for (const p of participants) {
+          const val = parseFloat(draft.fixedAmounts[p.id] ?? "0") || 0
+          if (val > 0) amounts[p.id] = val
+        }
+        if (Object.keys(amounts).length > 0) {
+          await setDefaultParticipantAmounts(newField.id, amounts)
+        }
+      }
 
       qc.invalidateQueries({ queryKey: TEMPLATE_KEYS.fields(templateId) })
       qc.invalidateQueries({ queryKey: TEMPLATE_KEYS.splitRules(templateId) })
 
-      // Reset draft, preserving participant keys
+      // Reset draft and manual-set tracking
       setDraft(emptyDraft(participants.map((p) => p.id)))
+      setFixedManuallySet(new Set())
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to add field")
     } finally {
@@ -150,6 +212,9 @@ export default function WizardStep3({ templateId, onFinish, onBack }: Props) {
               )}
               {f.defaultSplitRuleId && (
                 <span className="text-xs text-primary">Split ✓</span>
+              )}
+              {!f.defaultSplitRuleId && f.defaultParticipantAmounts && Object.keys(f.defaultParticipantAmounts).length > 0 && (
+                <span className="text-xs text-primary">Fixed ✓</span>
               )}
             </div>
           ))}
@@ -227,42 +292,83 @@ export default function WizardStep3({ templateId, onFinish, onBack }: Props) {
         {draft.fieldType === "SINGLE" && (
           <div className="space-y-2">
             <Label className="text-xs">Split *</Label>
-            <div className="space-y-2">
-              {participants.map((p) => (
-                <div key={p.id} className="flex items-center gap-2">
-                  <span className="w-24 text-sm text-muted-foreground truncate">{p.name}</span>
-                  <Input
-                    type="number"
-                    min="0"
-                    max="100"
-                    step="0.1"
-                    placeholder="0"
-                    value={draft.percents[p.id] ?? ""}
-                    onChange={(e) => {
-                      const val = e.target.value
-                      setDraft((d) => {
-                        const newPercents = { ...d.percents, [p.id]: val }
-                        if (participants.length === 2) {
-                          const other = participants.find((other) => other.id !== p.id)!
-                          const remainder = 100 - (parseFloat(val) || 0)
-                          newPercents[other.id] = remainder > 0 ? String(Math.round(remainder * 10) / 10) : "0"
-                        }
-                        return { ...d, percents: newPercents }
-                      })
-                    }}
-                    className="w-20 bg-background border-border h-8 text-sm"
+            <div className="flex gap-4">
+              {(["PERCENT", "FIXED"] as const).map((mode) => (
+                <label key={mode} className="flex items-center gap-1.5 text-sm cursor-pointer">
+                  <input
+                    type="radio"
+                    name="splitMode-wizard"
+                    value={mode}
+                    checked={draft.splitMode === mode}
+                    onChange={() => { setDraft((d) => ({ ...d, splitMode: mode })); setFixedManuallySet(new Set()) }}
+                    className="accent-primary"
                   />
-                  <span className="text-sm text-muted-foreground">%</span>
-                </div>
+                  {mode === "PERCENT" ? "Percentages" : "Fixed Amounts"}
+                </label>
               ))}
             </div>
-            <p
-              className={`text-xs font-medium ${
-                percentsValid ? "text-primary" : "text-muted-foreground"
-              }`}
-            >
-              Total: {percentTotal.toFixed(1)}%{percentsValid ? " ✓" : participants.length >= 3 ? ` · ${(100 - percentTotal).toFixed(1)}% remaining` : ` (need 100%)`}
-            </p>
+
+            {draft.splitMode === "PERCENT" && (
+              <>
+                <div className="space-y-2">
+                  {participants.map((p) => (
+                    <div key={p.id} className="flex items-center gap-2">
+                      <span className="w-24 text-sm text-muted-foreground truncate">{p.name}</span>
+                      <Input
+                        type="number"
+                        min="0"
+                        max="100"
+                        step="0.1"
+                        placeholder="0"
+                        value={draft.percents[p.id] ?? ""}
+                        onChange={(e) => {
+                          const val = e.target.value
+                          setDraft((d) => {
+                            const newPercents = { ...d.percents, [p.id]: val }
+                            if (participants.length === 2) {
+                              const other = participants.find((other) => other.id !== p.id)!
+                              const remainder = 100 - (parseFloat(val) || 0)
+                              newPercents[other.id] = remainder > 0 ? String(Math.round(remainder * 10) / 10) : "0"
+                            }
+                            return { ...d, percents: newPercents }
+                          })
+                        }}
+                        className="w-20 bg-background border-border h-8 text-sm"
+                      />
+                      <span className="text-sm text-muted-foreground">%</span>
+                    </div>
+                  ))}
+                </div>
+                <p className={`text-xs font-medium ${percentsValid ? "text-primary" : "text-muted-foreground"}`}>
+                  Total: {percentTotal.toFixed(1)}%{percentsValid ? " ✓" : participants.length >= 3 ? ` · ${(100 - percentTotal).toFixed(1)}% remaining` : ` (need 100%)`}
+                </p>
+              </>
+            )}
+
+            {draft.splitMode === "FIXED" && (
+              <>
+                <div className="space-y-2">
+                  {participants.map((p) => (
+                    <div key={p.id} className="flex items-center gap-2">
+                      <span className="w-24 text-sm text-muted-foreground truncate">{p.name}</span>
+                      <span className="text-sm text-muted-foreground">$</span>
+                      <Input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        placeholder="0.00"
+                        value={draft.fixedAmounts[p.id] ?? ""}
+                        onChange={(e) => handleFixedAmountChange(p.id, e.target.value)}
+                        className="w-24 bg-background border-border h-8 text-sm"
+                      />
+                    </div>
+                  ))}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Total: ${fixedTotal.toFixed(2)}{fixedTotal === 0 ? " · optional, can be set per instance" : ""}
+                </p>
+              </>
+            )}
           </div>
         )}
 
@@ -273,7 +379,7 @@ export default function WizardStep3({ templateId, onFinish, onBack }: Props) {
           size="sm"
           className="w-full"
           onClick={addField}
-          disabled={loading || !draft.label.trim() || (draft.fieldType === "SINGLE" && !percentsValid)}
+          disabled={loading || !draft.label.trim() || (draft.fieldType === "SINGLE" && draft.splitMode === "PERCENT" && !percentsValid)}
         >
           <Plus className="h-3.5 w-3.5 mr-1" />
           {loading ? "Adding..." : "Add Field"}

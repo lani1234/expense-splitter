@@ -3,7 +3,7 @@ import { Pencil, Check, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useUpdateField, TEMPLATE_KEYS } from "@/hooks/useTemplates"
-import { createSplitRule, createAllocation } from "@/api/templates"
+import { createSplitRule, createAllocation, setDefaultParticipantAmounts } from "@/api/templates"
 import { useQueryClient } from "@tanstack/react-query"
 import type { TemplateField, TemplateParticipant, SplitRule, SplitRuleAllocation, FieldType } from "@/types"
 import { useToast } from "@/hooks/use-toast"
@@ -61,6 +61,52 @@ function TemplateSplitBar({ splitRuleId, allAllocations, participants }: {
   )
 }
 
+function FixedAmountsBar({ participants, amounts }: {
+  participants: TemplateParticipant[]
+  amounts: Record<string, number>
+}) {
+  const total = Object.values(amounts).reduce((s, v) => s + v, 0)
+  if (total === 0) return null
+  return (
+    <div style={{
+      position: "relative", height: 32, borderRadius: 999,
+      background: "rgba(28,22,46,0.05)",
+      boxShadow: "inset 0 1px 2px rgba(0,0,0,0.06)",
+      display: "flex", overflow: "hidden",
+    }}>
+      {participants.map((p, i) => {
+        const amt = amounts[p.id] ?? 0
+        const pct = total > 0 ? (amt / total) * 100 : 0
+        const isLast = i === participants.length - 1
+        if (pct === 0) return null
+        return (
+          <div key={p.id} style={{
+            width: `${pct}%`,
+            background: participantGradient(i),
+            position: "relative",
+            boxShadow: "inset 0 1px 0 rgba(255,255,255,0.4)",
+            borderRight: !isLast ? "1.5px solid rgba(255,255,255,0.55)" : undefined,
+          }}>
+            <span style={{
+              position: "absolute", top: "50%", transform: "translateY(-50%)",
+              ...(isLast ? { right: 10 } : { left: 10 }),
+              fontSize: 11, fontWeight: 600, color: "white",
+              textShadow: "0 1px 2px rgba(0,0,0,0.25)",
+              fontFamily: "'JetBrains Mono', monospace",
+              pointerEvents: "none",
+              opacity: pct > 18 ? 1 : 0,
+              transition: "opacity .2s",
+              whiteSpace: "nowrap",
+            }}>
+              ${amt.toFixed(2)}
+            </span>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
 interface Props {
   field: TemplateField
   participants: TemplateParticipant[]
@@ -97,6 +143,18 @@ function percentsFromAllocations(
   )
 }
 
+function fixedAmountsFromField(
+  defaultParticipantAmounts: Record<string, number> | undefined,
+  participants: TemplateParticipant[]
+): Record<string, string> {
+  return Object.fromEntries(
+    participants.map((p) => [
+      p.id,
+      defaultParticipantAmounts?.[p.id] != null ? String(defaultParticipantAmounts[p.id]) : "",
+    ])
+  )
+}
+
 export default function TemplateFieldDefaultRow({ field, participants, splitRules, allAllocations, templateId }: Props) {
   const { toast } = useToast()
   const qc = useQueryClient()
@@ -104,31 +162,75 @@ export default function TemplateFieldDefaultRow({ field, participants, splitRule
 
   const defaultSplitRule = splitRules.find((r) => r.id === field.defaultSplitRuleId)
   const defaultPayer = participants.find((p) => p.id === field.defaultPayerParticipantId)
+  const hasFixedAmounts = !field.defaultSplitRuleId &&
+    field.defaultParticipantAmounts != null &&
+    Object.keys(field.defaultParticipantAmounts).length > 0
 
   const [editing, setEditing] = useState(false)
   const [label, setLabel] = useState(field.label)
   const [amount, setAmount] = useState(field.defaultAmount != null ? String(field.defaultAmount) : "")
+  const [splitMode, setSplitMode] = useState<"PERCENT" | "FIXED">(
+    field.defaultSplitRuleId ? "PERCENT" : "FIXED"
+  )
   const [percents, setPercents] = useState<Record<string, string>>(() =>
     percentsFromAllocations(field.defaultSplitRuleId, allAllocations, participants)
   )
+  const [fixedAmounts, setFixedAmounts] = useState<Record<string, string>>(() =>
+    fixedAmountsFromField(field.defaultParticipantAmounts, participants)
+  )
+  const [fixedManuallySet, setFixedManuallySet] = useState(new Set<string>())
   const [payerParticipantId, setPayerParticipantId] = useState(field.defaultPayerParticipantId ?? "")
   const [fieldType, setFieldType] = useState<FieldType>(field.fieldType)
   const [saving, setSaving] = useState(false)
 
-  // Sync local state when server data updates (after a save or when allAllocations loads)
   useEffect(() => {
     if (!editing) {
       setLabel(field.label)
       setAmount(field.defaultAmount != null ? String(field.defaultAmount) : "")
+      setSplitMode(field.defaultSplitRuleId ? "PERCENT" : "FIXED")
       setPercents(percentsFromAllocations(field.defaultSplitRuleId, allAllocations, participants))
+      setFixedAmounts(fixedAmountsFromField(field.defaultParticipantAmounts, participants))
+      setFixedManuallySet(new Set())
       setPayerParticipantId(field.defaultPayerParticipantId ?? "")
       setFieldType(field.fieldType)
     }
-  }, [field.label, field.defaultAmount, field.defaultSplitRuleId, field.defaultPayerParticipantId, field.fieldType, allAllocations, editing])
+  }, [field.label, field.defaultAmount, field.defaultSplitRuleId, field.defaultPayerParticipantId, field.fieldType, field.defaultParticipantAmounts, allAllocations, editing])
 
   const percentTotal = participants.reduce((sum, p) => sum + (parseFloat(percents[p.id] ?? "") || 0), 0)
   const allPercentsEmpty = participants.every((p) => !(parseFloat(percents[p.id] ?? "") > 0))
   const percentsValid = allPercentsEmpty || Math.abs(percentTotal - 100) < 0.01
+
+  const fixedTotal = participants.reduce((sum, p) => sum + (parseFloat(fixedAmounts[p.id] ?? "") || 0), 0)
+
+  const handleFixedAmountChange = (id: string, raw: string) => {
+    const total = parseFloat(amount) || 0
+    const next = new Set([...fixedManuallySet, id])
+    setFixedManuallySet(next)
+
+    const updated: Record<string, string> = { ...fixedAmounts, [id]: raw }
+
+    if (total > 0) {
+      const targets = participants.filter((p) => !next.has(p.id))
+      if (targets.length > 0) {
+        const manualSum = participants
+          .filter((p) => next.has(p.id))
+          .reduce((s, p) => s + (parseFloat(updated[p.id] ?? "0") || 0), 0)
+        const remaining = total - manualSum
+        if (remaining >= 0) {
+          const each = Math.round((remaining / targets.length) * 100) / 100
+          targets.forEach((p, i) => {
+            if (i === targets.length - 1) {
+              updated[p.id] = String(Math.max(0, Math.round((remaining - (targets.length - 1) * each) * 100) / 100))
+            } else {
+              updated[p.id] = String(each)
+            }
+          })
+        }
+      }
+    }
+
+    setFixedAmounts(updated)
+  }
 
   const handleSave = async () => {
     if (!label.trim()) {
@@ -140,7 +242,7 @@ export default function TemplateFieldDefaultRow({ field, participants, splitRule
       toast({ title: "Invalid amount", variant: "destructive" })
       return
     }
-    if (fieldType === "SINGLE" && !percentsValid) {
+    if (fieldType === "SINGLE" && splitMode === "PERCENT" && !percentsValid) {
       toast({ title: `Split must sum to 100% (currently ${percentTotal.toFixed(1)}%)`, variant: "destructive" })
       return
     }
@@ -150,11 +252,42 @@ export default function TemplateFieldDefaultRow({ field, participants, splitRule
       const params: Parameters<typeof updateField.mutateAsync>[0] = { fieldId: field.id, label: label.trim(), fieldType }
 
       if (fieldType === "MULTIPLE") {
-        // MULTIPLE fields carry no defaults — clear any that existed
         if (field.defaultAmount != null) params.clearDefaultAmount = true
         if (field.defaultSplitRuleId) params.clearDefaultSplitRule = true
         if (field.defaultPayerParticipantId) params.clearDefaultPayer = true
+        await updateField.mutateAsync(params)
+        await setDefaultParticipantAmounts(field.id, {})
+      } else if (splitMode === "FIXED") {
+        // Amount: use fixedTotal if amounts were entered, otherwise use explicit amount
+        const effectiveAmount = fixedTotal > 0 ? fixedTotal : parsedAmount
+        if (effectiveAmount === null && field.defaultAmount != null) {
+          params.clearDefaultAmount = true
+        } else if (effectiveAmount !== null) {
+          params.defaultAmount = effectiveAmount
+        }
+
+        // Clear any existing percent split rule
+        if (field.defaultSplitRuleId) params.clearDefaultSplitRule = true
+
+        // Payer
+        if (payerParticipantId === "" && field.defaultPayerParticipantId) {
+          params.clearDefaultPayer = true
+        } else if (payerParticipantId !== "") {
+          params.defaultPayerParticipantId = payerParticipantId
+        }
+
+        await updateField.mutateAsync(params)
+
+        // Save per-participant fixed amounts
+        const amounts: Record<string, number> = {}
+        for (const p of participants) {
+          const val = parseFloat(fixedAmounts[p.id] ?? "0") || 0
+          if (val > 0) amounts[p.id] = val
+        }
+        await setDefaultParticipantAmounts(field.id, amounts)
+        qc.invalidateQueries({ queryKey: TEMPLATE_KEYS.fields(templateId) })
       } else {
+        // PERCENT mode
         // Amount
         if (parsedAmount === null && field.defaultAmount != null) {
           params.clearDefaultAmount = true
@@ -171,7 +304,6 @@ export default function TemplateFieldDefaultRow({ field, participants, splitRule
             wantedPercents[p.id] = parseFloat(percents[p.id] ?? "") || 0
           }
 
-          // Check existing rules for a match (only rules that cover ALL current participants)
           let resolvedRuleId: string | null = null
           for (const rule of splitRules) {
             const allocations = allAllocations[rule.id] ?? []
@@ -184,7 +316,6 @@ export default function TemplateFieldDefaultRow({ field, participants, splitRule
             if (matches) { resolvedRuleId = rule.id; break }
           }
 
-          // Create a new rule if no match found
           if (!resolvedRuleId) {
             const pctLabel = participants.map((p) => `${Math.round(wantedPercents[p.id])}%`).join(" / ")
             const rule = await createSplitRule(templateId, pctLabel)
@@ -205,9 +336,16 @@ export default function TemplateFieldDefaultRow({ field, participants, splitRule
         } else if (payerParticipantId !== "") {
           params.defaultPayerParticipantId = payerParticipantId
         }
+
+        await updateField.mutateAsync(params)
+
+        // Clear any existing fixed amounts when switching to percent
+        if (hasFixedAmounts) {
+          await setDefaultParticipantAmounts(field.id, {})
+          qc.invalidateQueries({ queryKey: TEMPLATE_KEYS.fields(templateId) })
+        }
       }
 
-      await updateField.mutateAsync(params)
       setEditing(false)
     } catch (e) {
       toast({
@@ -223,7 +361,10 @@ export default function TemplateFieldDefaultRow({ field, participants, splitRule
   const handleCancel = () => {
     setLabel(field.label)
     setAmount(field.defaultAmount != null ? String(field.defaultAmount) : "")
+    setSplitMode(field.defaultSplitRuleId ? "PERCENT" : "FIXED")
     setPercents(percentsFromAllocations(field.defaultSplitRuleId, allAllocations, participants))
+    setFixedAmounts(fixedAmountsFromField(field.defaultParticipantAmounts, participants))
+    setFixedManuallySet(new Set())
     setPayerParticipantId(field.defaultPayerParticipantId ?? "")
     setFieldType(field.fieldType)
     setEditing(false)
@@ -298,43 +439,86 @@ export default function TemplateFieldDefaultRow({ field, participants, splitRule
           </div>
         )}
 
-        {/* Split percentages — hidden for MULTIPLE fields */}
+        {/* Split — hidden for MULTIPLE fields */}
         {fieldType === "SINGLE" && (
           <div className="space-y-2">
             <label className="text-xs text-foreground/50 block">Split</label>
-            {participants.map((p) => (
-              <div key={p.id} className="flex items-center gap-2">
-                <span className="w-24 text-sm text-foreground/60 truncate">{p.name}</span>
-                <Input
-                  type="number"
-                  min="0"
-                  max="100"
-                  step="0.1"
-                  placeholder="0"
-                  value={percents[p.id] ?? ""}
-                  onChange={(e) => {
-                    const val = e.target.value
-                    setPercents((prev) => {
-                      const next = { ...prev, [p.id]: val }
-                      if (participants.length === 2) {
-                        const other = participants.find((o) => o.id !== p.id)!
-                        const remainder = 100 - (parseFloat(val) || 0)
-                        next[other.id] = remainder > 0 ? String(Math.round(remainder * 10) / 10) : "0"
-                      }
-                      return next
-                    })
-                  }}
-                  className="w-20 bg-white/80 border-black/12 h-8 text-sm"
-                />
-                <span className="text-sm text-foreground/50">%</span>
-              </div>
-            ))}
-            <p className={`text-xs font-medium ${percentsValid ? "text-primary" : "text-muted-foreground"}`}>
-              {allPercentsEmpty
-                ? "No split defined"
-                : `Total: ${percentTotal.toFixed(1)}%${percentsValid ? " ✓" : participants.length >= 3 ? ` · ${(100 - percentTotal).toFixed(1)}% remaining` : " (need 100%)"}`
-              }
-            </p>
+            <div className="flex gap-4">
+              {(["PERCENT", "FIXED"] as const).map((mode) => (
+                <label key={mode} className="flex items-center gap-1.5 text-sm cursor-pointer">
+                  <input
+                    type="radio"
+                    name={`splitMode-edit-${field.id}`}
+                    value={mode}
+                    checked={splitMode === mode}
+                    onChange={() => { setSplitMode(mode); setFixedManuallySet(new Set()) }}
+                    className="accent-primary"
+                  />
+                  {mode === "PERCENT" ? "Percentages" : "Fixed Amounts"}
+                </label>
+              ))}
+            </div>
+
+            {splitMode === "PERCENT" && (
+              <>
+                {participants.map((p) => (
+                  <div key={p.id} className="flex items-center gap-2">
+                    <span className="w-24 text-sm text-foreground/60 truncate">{p.name}</span>
+                    <Input
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="0.1"
+                      placeholder="0"
+                      value={percents[p.id] ?? ""}
+                      onChange={(e) => {
+                        const val = e.target.value
+                        setPercents((prev) => {
+                          const next = { ...prev, [p.id]: val }
+                          if (participants.length === 2) {
+                            const other = participants.find((o) => o.id !== p.id)!
+                            const remainder = 100 - (parseFloat(val) || 0)
+                            next[other.id] = remainder > 0 ? String(Math.round(remainder * 10) / 10) : "0"
+                          }
+                          return next
+                        })
+                      }}
+                      className="w-20 bg-white/80 border-black/12 h-8 text-sm"
+                    />
+                    <span className="text-sm text-foreground/50">%</span>
+                  </div>
+                ))}
+                <p className={`text-xs font-medium ${percentsValid ? "text-primary" : "text-muted-foreground"}`}>
+                  {allPercentsEmpty
+                    ? "No split defined"
+                    : `Total: ${percentTotal.toFixed(1)}%${percentsValid ? " ✓" : participants.length >= 3 ? ` · ${(100 - percentTotal).toFixed(1)}% remaining` : " (need 100%)"}`
+                  }
+                </p>
+              </>
+            )}
+
+            {splitMode === "FIXED" && (
+              <>
+                {participants.map((p) => (
+                  <div key={p.id} className="flex items-center gap-2">
+                    <span className="w-24 text-sm text-foreground/60 truncate">{p.name}</span>
+                    <span className="text-sm text-foreground/50">$</span>
+                    <Input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      placeholder="0.00"
+                      value={fixedAmounts[p.id] ?? ""}
+                      onChange={(e) => handleFixedAmountChange(p.id, e.target.value)}
+                      className="w-24 bg-white/80 border-black/12 h-8 text-sm"
+                    />
+                  </div>
+                ))}
+                <p className="text-xs text-muted-foreground">
+                  Total: ${fixedTotal.toFixed(2)}{fixedTotal === 0 ? " · optional, can be set per instance" : ""}
+                </p>
+              </>
+            )}
           </div>
         )}
 
@@ -343,7 +527,12 @@ export default function TemplateFieldDefaultRow({ field, participants, splitRule
             <X className="h-3.5 w-3.5 mr-1" />
             Cancel
           </Button>
-          <Button size="sm" onClick={handleSave} disabled={saving || !label.trim() || (fieldType === "SINGLE" && !percentsValid)} className="h-7">
+          <Button
+            size="sm"
+            onClick={handleSave}
+            disabled={saving || !label.trim() || (fieldType === "SINGLE" && splitMode === "PERCENT" && !percentsValid)}
+            className="h-7"
+          >
             <Check className="h-3.5 w-3.5 mr-1" />
             {saving ? "Saving..." : "Save"}
           </Button>
@@ -370,12 +559,17 @@ export default function TemplateFieldDefaultRow({ field, participants, splitRule
         )}
       </div>
 
-      {/* Split bar or empty state */}
+      {/* Split bar */}
       {defaultSplitRule ? (
         <TemplateSplitBar
           splitRuleId={defaultSplitRule.id}
           allAllocations={allAllocations}
           participants={participants}
+        />
+      ) : hasFixedAmounts ? (
+        <FixedAmountsBar
+          participants={participants}
+          amounts={field.defaultParticipantAmounts!}
         />
       ) : (
         <div style={{ height: 32, borderRadius: 999, background: "rgba(28,22,46,0.04)" }} />
@@ -396,7 +590,7 @@ export default function TemplateFieldDefaultRow({ field, participants, splitRule
               color: "white", fontSize: 8, fontWeight: 700,
               display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
             }}>
-              {defaultPayer.name.slice(-1).toUpperCase()}
+              {defaultPayer.name.charAt(0).toUpperCase()}
             </span>
             paid
           </span>

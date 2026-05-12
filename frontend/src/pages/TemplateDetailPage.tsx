@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
 
+import NewInstanceDialog from "@/components/instances/NewInstanceDialog"
 import EditableRow from "@/components/templates/EditableRow"
 import TemplateFieldSection from "@/components/templates/TemplateFieldSection"
 import AddTemplateFieldForm from "@/components/templates/AddTemplateFieldForm"
@@ -56,6 +57,7 @@ export default function TemplateDetailPage() {
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [newParticipantName, setNewParticipantName] = useState("")
   const [addingField, setAddingField] = useState(false)
+  const [newInstanceOpen, setNewInstanceOpen] = useState(false)
 
   if (templateLoading || participantsLoading || fieldsLoading) {
     return (
@@ -153,6 +155,9 @@ export default function TemplateDetailPage() {
         </div>
 
         <div className="flex items-center gap-2 mt-1">
+          <Button size="sm" onClick={() => setNewInstanceOpen(true)}>
+            + Start New Split
+          </Button>
           {confirmDelete ? (
             <>
               <span className="text-xs text-destructive">Delete template?</span>
@@ -252,7 +257,7 @@ export default function TemplateDetailPage() {
           />
         ) : (
           <button
-            className="flex w-full items-center gap-1.5 px-3 py-2 text-sm text-foreground/40 hover:text-foreground/65 hover:bg-white/25 rounded-xl border border-dashed border-foreground/15 transition-colors"
+            className="flex items-center gap-1.5 px-4 py-2.5 text-sm font-semibold text-white bg-primary hover:bg-primary/90 rounded-xl transition-colors"
             onClick={() => setAddingField(true)}
           >
             <Plus className="h-3.5 w-3.5" />
@@ -260,6 +265,13 @@ export default function TemplateDetailPage() {
           </button>
         )}
       </div>
+
+      <NewInstanceDialog
+        key={newInstanceOpen ? template.id : ""}
+        open={newInstanceOpen}
+        defaultTemplateId={template.id}
+        onClose={() => setNewInstanceOpen(false)}
+      />
     </div>
   )
 }

@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -38,6 +38,16 @@ export default function FieldSection({
   const [newCustomPercentages, setNewCustomPercentages] = useState<Record<string, number>>({})
   const [newPayerParticipantId, setNewPayerParticipantId] = useState("")
   const [adding, setAdding] = useState(false)
+
+  useEffect(() => {
+    if (showAdd && !field.defaultSplitRuleId && participants.length > 0) {
+      const n = participants.length
+      const equal = Math.round(100 / n)
+      setNewCustomPercentages(
+        Object.fromEntries(participants.map((p, i) => [p.id, i === n - 1 ? 100 - equal * (n - 1) : equal]))
+      )
+    }
+  }, [showAdd, participants.length])
 
   const isMultiple = field.fieldType === "MULTIPLE"
 
