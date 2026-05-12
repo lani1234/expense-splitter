@@ -38,7 +38,7 @@ const router = createBrowserRouter([
       </ProtectedRoute>
     ),
     children: [
-      { index: true, element: <Navigate to="/templates" replace /> },
+      { index: true, element: <Navigate to="/instances" replace /> },
       { path: "templates", element: <TemplatesPage /> },
       { path: "templates/:templateId", element: <TemplateDetailPage /> },
       { path: "instances", element: <InstancesPage /> },

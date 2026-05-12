@@ -2,6 +2,7 @@ import { useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { useAuth } from "@/context/AuthContext"
 import { signUp, confirmSignUp } from "@/lib/auth"
+import { getAllInstances } from "@/api/instances"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import AuroraBackground from "@/components/layout/AuroraBackground"
@@ -19,13 +20,23 @@ export default function LoginPage() {
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
 
+  const redirectAfterLogin = async () => {
+    try {
+      const instances = await getAllInstances()
+      const hasActive = instances.some((i) => i.status === "IN_PROGRESS")
+      navigate(hasActive ? "/instances" : "/templates", { replace: true })
+    } catch {
+      navigate("/instances", { replace: true })
+    }
+  }
+
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault()
     setError("")
     setLoading(true)
     try {
       await signIn(email, password)
-      navigate("/templates", { replace: true })
+      await redirectAfterLogin()
     } catch (err) {
       setError(err instanceof Error ? err.message : "Sign in failed")
     } finally {
@@ -58,7 +69,7 @@ export default function LoginPage() {
     try {
       await confirmSignUp(email, code)
       await signIn(email, password)
-      navigate("/templates", { replace: true })
+      await redirectAfterLogin()
     } catch (err) {
       setError(err instanceof Error ? err.message : "Verification failed")
     } finally {
